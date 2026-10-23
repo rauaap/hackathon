@@ -41,7 +41,46 @@ export const draftInitial: Copy = {
   en: `${background.en}\n\n${interpretation.en}\n\n${unsupported.en}`,
   fi: `${background.fi}\n\n${interpretation.fi}\n\n${unsupported.fi}`,
 };
+export type SourceLead = {
+  title: string;
+  url: string;
+  publishedAt: string | null;
+};
+export const readerNeeds = [
+  {
+    id: "information",
+    en: "Information — what happened",
+    fi: "Tieto — mitä tapahtui",
+  },
+  {
+    id: "understanding",
+    en: "Understanding — why it matters",
+    fi: "Ymmärrys — miksi se merkitsee",
+  },
+  {
+    id: "usefulness",
+    en: "Usefulness — help in everyday life",
+    fi: "Hyöty — apua arkeen",
+  },
+  {
+    id: "emotion",
+    en: "Emotion — move or inspire",
+    fi: "Tunne — kosketa tai innosta",
+  },
+  {
+    id: "break",
+    en: "Break — a moment to unwind",
+    fi: "Tauko — hetki hengähtää",
+  },
+  {
+    id: "community",
+    en: "Community — connection and voice",
+    fi: "Yhteisö — yhteys ja oma ääni",
+  },
+] as const;
 export type Question = {
+  source?: SourceLead;
+  kind?: "question" | "observation";
   id: string;
   text: Copy;
   supports: number;
@@ -59,6 +98,7 @@ export type Story = {
   corrections: Correction[];
   review?: string;
   saved?: boolean;
+  readerNeed?: string;
 };
 export const scenarios: Story[] = [
   {
@@ -124,6 +164,7 @@ export type DemoState = {
   questions: Question[];
   selected: string;
   reason: string;
+  readerNeed: string;
   draft: Copy;
   revision: number;
   fact: boolean;
@@ -169,6 +210,7 @@ export function initialState(): DemoState {
     ],
     selected: "",
     reason: "",
+    readerNeed: "understanding",
     draft: { ...draftInitial },
     revision: 0,
     fact: false,

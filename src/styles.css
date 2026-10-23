@@ -2778,3 +2778,89 @@ nav > div,
 .masthead-row > * {
   min-width: 0;
 }
+
+/* Source desk: live inputs remain distinct from reviewed reporting. */
+.live-sources {
+  margin: 0 0 40px;
+  border-top: 3px solid var(--ink, #20251f);
+}
+.live-sources .panel-heading {
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.live-source-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 40px;
+  margin-top: 24px;
+}
+.live-source-grid > div {
+  min-width: 0;
+}
+.source-status {
+  color: #525a51;
+  font-size: 14px;
+  margin-top: 16px;
+}
+.source-headlines {
+  padding: 0;
+  list-style: none;
+}
+.source-headlines li {
+  border-top: 1px solid #d8dcd4;
+  padding: 18px 0;
+  display: grid;
+  gap: 8px;
+}
+.source-headlines time {
+  color: #5b6358;
+  font-size: 13px;
+}
+.source-headlines a {
+  color: #20251f;
+  font-family: var(--serif, Georgia, serif);
+  font-size: 20px;
+  line-height: 1.35;
+}
+.source-headlines .text-button {
+  justify-self: start;
+}
+.source-lead {
+  font-size: 14px;
+  color: #525a51;
+}
+select {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid #8e9688;
+  background: #fff;
+  color: #20251f;
+  font: inherit;
+  border-radius: 0;
+}
+.pilot-evaluation {
+  padding: 36px 0;
+  border-top: 2px solid #20251f;
+}
+.evaluation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+.evaluation-grid h3 {
+  font-size: 22px;
+}
+.evaluation-grid p {
+  line-height: 1.65;
+}
+@media (max-width: 760px) {
+  .live-source-grid,
+  .evaluation-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .live-sources .panel-heading .secondary {
+    width: 100%;
+  }
+}

@@ -41,3 +41,12 @@ The lead source-based explainer comes first, with an original Oulu-inspired wate
 - Real field Core Web Vitals, assistive-technology audit, real AI, real payment, shared persistence and message delivery: **not verified / outside this explicitly simulated demo**.
 
 Browser artifacts are local and gitignored under `output/playwright/`. The code and documentation contain no credentials.
+
+## Sponsor-source extension (24 October 2026)
+
+- Read all six pages of the supplied sponsor PDF. Kept the product on Challenge 2; added six reader needs, private unverified observations, pilot co-design/distribution/cost explanations.
+- Actual local API + Chromium requests returned six Kaleva RSS headlines and Oulu library rows dated 2016. Historical status and original Finnish headlines are explicit. The source desk does not claim an approved translation or a current city-service count.
+- Four Node tests passed: trustworthy metadata/URL handling, partial upstream failure, complete outage, XML entity rejection. They mock upstreams and are distinct from the live checks.
+- Browser checks passed: source-to-private-queue and duplicate prevention; RSS leads blocked from unrelated prepared survey draft; local observation labelled unverified; changed reader need invalidates approval and reviewed need appears on publication; persisted source lead; failed refresh + retry; Finnish controls.
+- Changed newsroom/offers views checked at 320/390/768/1440px with no horizontal overflow; Finnish live sources at390px. New newsroom loaded state had zero axe WCAG A/AA findings and no page exceptions. Screenshots inspected visually.
+- An intentional 502 during the failure test is expected; this is not a production outage claim. External sources can change or be unavailable; the app exposes that state and retains the deterministic demonstration.

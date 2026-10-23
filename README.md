@@ -6,7 +6,7 @@ An independent hackathon concept for international residents of Oulu. **Not an o
 
 ### Run locally
 
-Use Node.js 22.12+ (Node 24 LTS recommended).
+Use Node.js 24 LTS (also required for the TypeScript API tests).
 
 ```sh
 npm ci
@@ -23,15 +23,15 @@ npm run preview
 ### What works
 
 - **Reader** (`#news`): English/Finnish content, student and working/family filters, a source-based main explainer, three explicitly fictional story scenarios, free briefing preview, private questions, one support per browser demo, labelled advertising.
-- **Newsroom** (`#newsroom`): select a question and explain its relevance; inspect the official source and claim list; edit a bilingual draft; resolve a deliberately unsupported assertion; reject or explicitly approve both factual and language review; publish the exact approved revision. Editing invalidates approval. Reported errors enter a queue, with reviewed bilingual amendments and visible correction notes.
+- **Newsroom** (`#newsroom`): inspect live Kaleva RSS headlines and a dated Oulu data sample; flag source leads to the local queue; collect unverified local observations; choose one of Kaleva’s six reader needs; select a question and explain its relevance; inspect the official source and claim list; edit a bilingual draft; resolve a deliberately unsupported assertion; reject or explicitly approve both factual and language review; publish the exact approved revision. Editing invalidates approval. Reported errors enter a queue, with reviewed bilingual amendments and visible correction notes.
 - **Membership & business** (`#offers`): primary €900/six-week employer hypothesis; free/€5.90 monthly consumer comparison; simulated membership unlocks a premium item, saving and topic following; €300/month advertising hypothesis with a live editable fictional example. Employer-interest entries are recorded only in local browser storage.
 - State persists in localStorage under `kaleva-local-demo-v1`. **Reset demo** restores the starting fixtures. There is no shared state across users.
 
 ### Deliberate boundaries
 
-Prepared fixtures simulate AI source selection, drafting and translation. No live model, crawler, payment processor, authentication, email delivery, tracking service or database is connected. Alex North is a fictional reviewer. Public newsroom controls demonstrate review responsibility; they are not secure production administration. The seeded assertion detector covers the known demo assertion; arbitrary text still needs genuine human fact checking.
+Prepared fixtures simulate AI source selection, drafting and translation. No live model, crawler, payment processor, authentication, email delivery, tracking service or database is connected. The source desk makes real read-only requests to Kaleva RSS and one Oulu open-data endpoint via `/api/sources`; drafts and translations remain simulated. Alex North is a fictional reviewer. Public newsroom controls demonstrate review responsibility; they are not secure production administration. The seeded assertion detector covers the known demo assertion; arbitrary text still needs genuine human fact checking.
 
-Questions and forms stay on the device. Membership activation takes no money. Prices are proposed test offers, not Kaleva's prices. There are no asserted customers, partnerships, audience figures or revenue. Employers fund access, never coverage decisions or individual reading surveillance.
+Questions and forms stay on the device. New live RSS leads are blocked from the unrelated prepared survey draft: they require new reporting, not automatic publication. Membership activation takes no money. Prices are proposed test offers, not Kaleva's prices. There are no asserted customers, partnerships, audience figures or revenue. Employers fund access, never coverage decisions or individual reading surveillance.
 
 The lead background article is labelled a concept preview rather than falsely claiming real editorial approval. Published newsroom versions are explicitly approved only inside this local simulation. Essential information, the main article and original sources stay free.
 
@@ -58,10 +58,20 @@ Production build (`tsc --noEmit && vite build`) passes. Chromium browser checks 
 
 After the supplied product-quality instructions, refined the typography, removed decorative story-card artwork and redundant containers, and made all three views more editorial. Also checked 320/390/768/1024/1440px layouts, Finnish at 320px, short landscape, 200% text-size enlargement, modal initial focus/Tab containment/Escape/focus restoration, route/language titles and unknown-hash recovery. Automated axe WCAG A/AA checks found no violations in the three main desktop views; this is not a full accessibility conformance audit. Free briefing access, private questions, one-time support, and local-only pilot confirmation also passed. See [QUALITY-CHECK.md](QUALITY-CHECK.md) for the applicable release checklist. Temporary browser artifacts are ignored under `output/playwright/`.
 
+### Sponsor brief and live source additions
+
+The supplied `Junction_Kaleva_Media.pdf` places this concept in **Challenge 2: News for Everyone**. The implementation now makes the six reader needs explicit, adds private community observations and describes pilot co-design, distribution and cost measurement. See [CHALLENGE-FIT.md](CHALLENGE-FIT.md).
+
+- The live source desk fetches original Finnish headlines, dates and links from the [free-news RSS](https://www.kaleva.fi/feedit/rss/managed-listing/rss-maksuttomat/). It does not reproduce articles, translate them or imply they all concern Oulu.
+- The [Oulu API](https://api.ouka.fi/ohje/index.html) sample requests library statistics with an explicit year. The latest year returned in this query was **2016** on 24 October 2026. The UI marks the result historical, not current. Other endpoints were not exhaustively audited.
+- `/api/sources` uses only two fixed public URLs, a nine-second upstream timeout, a 1MiB response bound, safe RSS parsing and host-checked article links. One source can fail without hiding the other. No browser questions or form entries are forwarded. Results may be cached for up to three minutes.
+- The same API handler runs through a small Vite middleware locally and as a Vercel Function in deployment. No API keys or environment variables are required.
+- `npm test` verifies source metadata, foreign-link rejection, partial/complete upstream failures and rejection of XML entity declarations. These unit tests mock upstream responses; separate browser checks exercised real source retrieval.
+
 ### Three-minute demonstration
 
 - **0:00–0:45 — Understand Oulu.** Open the lead article, show the 2024 source and uncertainty, switch Finnish/English and compare the student/family context. Submit “Where can I find local information I can actually understand?”
-- **0:45–2:00 — Earn trust.** Open Newsroom demo, select that question and write a brief public-interest reason. Open the prepared draft. Show the unsupported assertion and disabled publication. Replace it, check factual and language review, approve, then edit one word to demonstrate invalidation. Review again, approve and publish. Show the new story in the reader feed.
+- **0:45–2:00 — Earn trust.** Open Newsroom demo, briefly check live sources and point out the historical-data warning. Select that question and write a brief public-interest reason. Open the prepared draft. Show the unsupported assertion and disabled publication. Replace it, check factual and language review, approve, then edit one word to demonstrate invalidation. Review again, approve and publish. Show the new story in the reader feed.
 - **2:00–3:00 — Make the experiment concrete.** Open Membership & business. Lead with the €900 employer pilot: up to 100 employees/family members, two explainers per week and one digest, editorial independence. Briefly activate simulated Plus and change the clearly labelled ad. End with the proposed test: sell one employer pilot and separate local advertising; measure repeat use, trust, editorial workload and actual willingness to pay.
 
 ### Vercel
@@ -73,3 +83,7 @@ npx vercel --prod
 ```
 
 Choose the dedicated Kaleva Local project; do not select an unrelated existing application.
+
+Live demo: https://kaleva-local.vercel.app · source: https://github.com/rauaap/hackathon
+
+The current Vercel GitHub app connection cannot read this repository, so releases were deployed from the exact committed source files through the Vercel API. GitHub `main` is updated, but future pushes are **not automatically deployed** until the repository owner enables that Vercel Git integration.

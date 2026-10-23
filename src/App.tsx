@@ -8,6 +8,8 @@ import {
 } from "react";
 import {
   SOURCE,
+  readerNeeds,
+  type SourceLead,
   title,
   standfirst,
   background,
@@ -26,6 +28,8 @@ import {
   type Story,
   type DemoState,
 } from "./data";
+
+import LiveSources from "./LiveSources";
 
 type View = "reader" | "offers" | "newsroom" | "notfound";
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
@@ -357,6 +361,10 @@ export default function App() {
           supports: 0,
           supported: false,
           private: true,
+          kind:
+            data.get("contribution") === "observation"
+              ? "observation"
+              : "question",
         },
       ],
     }));
@@ -365,6 +373,35 @@ export default function App() {
       t(
         "Question added privately to the local editorial queue.",
         "Kysymys lisätty yksityisesti paikalliseen toimitusjonoon.",
+      ),
+    );
+  }
+  function queueSource(source: SourceLead) {
+    setState((s) =>
+      s.questions.some((q) => q.source?.url === source.url)
+        ? s
+        : {
+            ...s,
+            questions: [
+              ...s.questions,
+              {
+                id: crypto.randomUUID(),
+                text: {
+                  en: `What does this development mean for our Oulu community? ${source.title}`,
+                  fi: `Mitä tämä kehitys tarkoittaa Oulun yhteisöllemme? ${source.title}`,
+                },
+                supports: 0,
+                supported: false,
+                private: true,
+                source,
+              },
+            ],
+          },
+    );
+    setToast(
+      t(
+        "Source lead saved to the local queue. New reporting is required.",
+        "Lähdevihje tallennettu paikalliseen jonoon. Se vaatii uutta tiedonhankintaa.",
       ),
     );
   }
@@ -383,6 +420,7 @@ export default function App() {
           group: "everyone",
           corrections: [],
           review: "Alex North — fictional demo editor",
+          readerNeed: s.readerNeed,
         },
         ...s.stories,
       ],
@@ -566,6 +604,11 @@ export default function App() {
             : c(item.category)}
         </div>
         <h1>{main ? c(title) : c(item.title)}</h1>
+        {item.readerNeed && (
+          <p className="eyebrow">
+            {readerNeeds.find((need) => need.id === item.readerNeed)?.[lang]}
+          </p>
+        )}
         <p className="article-deck">
           {main
             ? c(standfirst)
@@ -1485,6 +1528,55 @@ export default function App() {
               </small>
             </div>
           </section>
+          <section className="pilot-evaluation">
+            <h2>
+              {t(
+                "What the six-week pilot must prove",
+                "Mitä kuuden viikon pilotin pitää osoittaa",
+              )}
+            </h2>
+            <div className="evaluation-grid">
+              <div>
+                <h3>
+                  {t("Build it with the community", "Rakenna yhteisön kanssa")}
+                </h3>
+                <p>
+                  {t(
+                    "Proposed recruitment: invite international workers, family members and students to separate listening sessions. Ask participants to choose useful topics and review whether explanations make sense. No community partner is confirmed.",
+                    "Ehdotettu rekrytointi: kutsu kansainvälisiä työntekijöitä, perheenjäseniä ja opiskelijoita erillisiin kuuntelutilaisuuksiin. Pyydä osallistujia valitsemaan hyödyllisiä aiheita ja arvioimaan selitysten ymmärrettävyyttä. Yhteisökumppaneita ei ole vahvistettu.",
+                  )}
+                </p>
+              </div>
+              <div>
+                <h3>
+                  {t(
+                    "Meet people where they are",
+                    "Tavoita ihmiset heidän arjessaan",
+                  )}
+                </h3>
+                <p>
+                  {t(
+                    "Start with a mobile web link: no app installation and essential sources stay open. English serves the first selected audience; Finnish lets their questions reach local readers too. Ask the pilot group which distribution channel they actually use before building delivery.",
+                    "Aloita mobiiliverkon linkistä: sovellusta ei tarvitse asentaa ja olennaiset lähteet pysyvät avoimina. Englanti palvelee ensimmäistä kohderyhmää; suomi tuo sen kysymykset myös paikallisten luettaviksi. Selvitä pilotissa käytetyt jakelukanavat ennen lähetysjärjestelmän rakentamista.",
+                  )}
+                </p>
+              </div>
+              <div>
+                <h3>
+                  {t(
+                    "Measure the cost of trust",
+                    "Mittaa luottamuksen kustannus",
+                  )}
+                </h3>
+                <p>
+                  {t(
+                    "Track reporting, source checks, both language reviews, corrections, support and hosting. The €900 test fee must cover the total six-week delivery cost before a margin exists. Costs are not yet measured. Compare repeat use and trust by reader group; a simulated checkout is not willingness to pay.",
+                    "Kirjaa tiedonhankinta, lähdetarkistus, molempien kielten tarkistus, oikaisut, tuki ja ylläpito. 900 euron testihinnan pitää kattaa koko kuuden viikon toimituskustannus ennen katetta. Kuluja ei ole vielä mitattu. Vertaa toistuvaa käyttöä ja luottamusta lukijaryhmittäin; simuloitu kassa ei todista maksuhalukkuutta.",
+                  )}
+                </p>
+              </div>
+            </div>
+          </section>
           <section className="experiment">
             <span className="eyebrow">
               {t("THE NEXT COMMERCIAL EXPERIMENT", "SEURAAVA KAUPALLINEN KOE")}
@@ -1537,6 +1629,13 @@ export default function App() {
               </span>
             ))}
           </div>
+          <LiveSources
+            lang={lang}
+            onQueue={queueSource}
+            queuedUrls={state.questions.flatMap((q) =>
+              q.source ? [q.source.url] : [],
+            )}
+          />
           <div className="newsroom-grid">
             <section className="queue panel">
               <div className="panel-heading">
@@ -1563,6 +1662,26 @@ export default function App() {
                       : t("ILLUSTRATIVE QUESTION", "HAVAINNOLLISTAVA KYSYMYS")}
                   </span>
                   <h3>{c(q.text)}</h3>
+                  {q.kind === "observation" && (
+                    <span className="badge">
+                      {t(
+                        "Unverified community observation",
+                        "Tarkistamaton yhteisön havainto",
+                      )}
+                    </span>
+                  )}
+                  {q.source && (
+                    <p className="source-lead">
+                      <a href={q.source.url} target="_blank" rel="noreferrer">
+                        {t("Inspect source ↗", "Tarkista lähde ↗")}
+                      </a>
+                      <br />
+                      {t(
+                        "Unreported lead. A new source-based draft is required; the prepared survey draft cannot answer this item.",
+                        "Selvittämätön vihje. Tarvitaan uusi lähteisiin perustuva juttu; valmis kyselyluonnos ei vastaa tähän aiheeseen.",
+                      )}
+                    </p>
+                  )}
                   <div>
                     <span>
                       {q.supports}{" "}
@@ -1631,6 +1750,36 @@ export default function App() {
               </small>
               <hr />
               <h3>{t("Relevance editor", "Aihevalinta")}</h3>
+              <label>
+                {t(
+                  "Reader need this story serves",
+                  "Jutun palvelema lukijatarve",
+                )}
+                <select
+                  value={state.readerNeed}
+                  onChange={(e) =>
+                    setState((s) => ({
+                      ...s,
+                      readerNeed: e.target.value,
+                      approval: null,
+                      fact: false,
+                      language: false,
+                    }))
+                  }
+                >
+                  {readerNeeds.map((need) => (
+                    <option key={need.id} value={need.id}>
+                      {need[lang]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <small>
+                {t(
+                  "Kaleva Media’s six reader needs guide the editorial choice. Community support alone never decides publication.",
+                  "Kaleva Median kuusi lukijatarvetta ohjaavat aihevalintaa. Yhteisön kannatus ei yksin ratkaise julkaisemista.",
+                )}
+              </small>
               <p>
                 {state.selected
                   ? c(
@@ -1673,7 +1822,11 @@ export default function App() {
               </p>
               <button
                 className="primary"
-                disabled={!state.selected || state.reason.trim().length < 10}
+                disabled={
+                  !state.selected ||
+                  state.reason.trim().length < 10 ||
+                  !!state.questions.find((q) => q.id === state.selected)?.source
+                }
                 onClick={() => setDraftOpen(true)}
               >
                 {t("Open prepared draft", "Avaa valmis luonnos")}{" "}
@@ -2118,7 +2271,24 @@ export default function App() {
           </p>
           <form onSubmit={submitQuestion}>
             <label>
-              {t("Your question", "Kysymyksesi")}
+              {t("Contribution type", "Osallistumisen tapa")}
+              <select name="contribution" defaultValue="question">
+                <option value="question">
+                  {t("Ask a question", "Kysy kysymys")}
+                </option>
+                <option value="observation">
+                  {t(
+                    "Share local knowledge for verification",
+                    "Jaa paikallinen havainto tarkistettavaksi",
+                  )}
+                </option>
+              </select>
+            </label>
+            <label>
+              {t(
+                "Your question or local observation",
+                "Kysymyksesi tai paikallinen havaintosi",
+              )}
               <textarea
                 autoFocus
                 name="question"
