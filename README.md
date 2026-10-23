@@ -56,7 +56,7 @@ Production build (`tsc --noEmit && vite build`) passes. Chromium browser checks 
 9. Refresh preserves publication, membership, ad edits and support; reset clears the demo state.
 10. At 390px, all three views and article detail have no horizontal overflow. Desktop reader visually reviewed at 1440px.
 
-Also checked free briefing access, private question submission, one-time support, local-only pilot confirmation, and dialog Escape dismissal. Temporary browser artifacts are ignored under `output/playwright/`.
+After the supplied product-quality instructions, refined the typography, removed decorative story-card artwork and redundant containers, and made all three views more editorial. Also checked 320/390/768/1024/1440px layouts, Finnish at 320px, short landscape, 200% text-size enlargement, modal initial focus/Tab containment/Escape/focus restoration, route/language titles and unknown-hash recovery. Automated axe WCAG A/AA checks found no violations in the three main desktop views; this is not a full accessibility conformance audit. Free briefing access, private questions, one-time support, and local-only pilot confirmation also passed. See [QUALITY-CHECK.md](QUALITY-CHECK.md) for the applicable release checklist. Temporary browser artifacts are ignored under `output/playwright/`.
 
 ### Three-minute demonstration
 
@@ -66,7 +66,7 @@ Also checked free briefing access, private question submission, one-time support
 
 ### Vercel
 
-`vercel.json` configures Vite, `npm run build`, output `dist`, and SPA fallback. Deploy this repository to a **new, dedicated** project. No secrets or environment variables are required. With Vercel CLI already authenticated:
+`vercel.json` configures Vite, `npm run build`, and output `dist`. All application views use root hash navigation, so there is no catch-all rewrite. Unknown paths use the custom static `404.html`; unknown hashes show an in-app recovery view. Deploy this repository to a **new, dedicated** project. No secrets or environment variables are required. With Vercel CLI already authenticated:
 
 ```sh
 npx vercel --prod

@@ -27,7 +27,7 @@ import {
   type DemoState,
 } from "./data";
 
-type View = "reader" | "offers" | "newsroom";
+type View = "reader" | "offers" | "newsroom" | "notfound";
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, ReactNode> = {
     arrow: (
@@ -170,14 +170,39 @@ function Dialog({
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const el = ref.current;
+    const trigger = document.activeElement as HTMLElement | null;
     el?.showModal();
-    return () => el?.close();
+    (
+      el?.querySelector<HTMLElement>("textarea") ||
+      el?.querySelector<HTMLElement>("button")
+    )?.focus();
+    return () => {
+      el?.close();
+      if (trigger?.isConnected) trigger.focus();
+    };
   }, []);
   return (
     <dialog
       aria-labelledby={dialogTitle}
       ref={ref}
       onCancel={onClose}
+      onKeyDown={(e) => {
+        if (e.key !== "Tab") return;
+        const nodes = [
+          ...e.currentTarget.querySelectorAll<HTMLElement>(
+            'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]',
+          ),
+        ];
+        const first = nodes[0],
+          last = nodes[nodes.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -203,11 +228,16 @@ export default function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [group, setGroup] = useState<Group>("everyone");
   const viewFromHash = (): View =>
-    location.hash === "#offers"
-      ? "offers"
-      : location.hash === "#newsroom"
-        ? "newsroom"
-        : "reader";
+    location.pathname !== "/" ||
+    !["", "#news", "#offers", "#newsroom", "#main-content"].includes(
+      location.hash,
+    )
+      ? "notfound"
+      : location.hash === "#offers"
+        ? "offers"
+        : location.hash === "#newsroom"
+          ? "newsroom"
+          : "reader";
   const [view, setView] = useState<View>(viewFromHash);
   const [modal, setModal] = useState<
     "question" | "checkout" | "error" | "reset" | null
@@ -239,7 +269,28 @@ export default function App() {
   }, [state]);
   useEffect(() => {
     document.documentElement.lang = lang;
-  }, [lang]);
+    const pageTitle = story
+      ? story === "main"
+        ? title[lang]
+        : story.title[lang]
+      : view === "offers"
+        ? t("Membership & employer pilot", "Jäsenyys ja työnantajapilotti")
+        : view === "newsroom"
+          ? t("Newsroom demo", "Toimitusdemo")
+          : view === "notfound"
+            ? t("Page not found", "Sivua ei löytynyt")
+            : t("Oulu, explained", "Oulu, ymmärrettävästi");
+    document.title = `${pageTitle} | Kaleva Local`;
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute(
+        "content",
+        t(
+          "An independent hackathon concept: local Oulu reporting in English and Finnish, community questions and human editorial review.",
+          "Riippumaton hackathon-konsepti: Oulun paikallisjournalismia suomeksi ja englanniksi, yhteisökysymyksiä ja ihmisen toimituksellinen tarkistus.",
+        ),
+      );
+  }, [lang, view, story]);
   useEffect(() => {
     const fn = () => {
       setView(viewFromHash());
@@ -256,6 +307,7 @@ export default function App() {
   const navigate = (v: View) => {
     setView(v);
     setStory(null);
+    if (location.pathname !== "/") history.replaceState(null, "", "/");
     location.hash = v === "reader" ? "news" : v;
     window.scrollTo({ top: 0, behavior: "instant" });
   };
@@ -462,18 +514,10 @@ export default function App() {
     setStory(item);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
-  function StoryCard({ item, index }: { item: Story; index: number }) {
+  function StoryCard({ item }: { item: Story }) {
     return (
-      <article className={`story-card tone-${index % 3}`}>
+      <article className="story-card">
         <button className="card-open" onClick={() => showStory(item)}>
-          <div className="card-visual" aria-hidden="true">
-            <span className="visual-number">0{index + 1}</span>
-            <Icon
-              name={index === 1 ? "chat" : index === 2 ? "book" : "globe"}
-              size={52}
-            />
-            <span className="visual-line" />
-          </div>
           <div className="category">{c(item.category)}</div>
           <span className="scenario-label">
             {item.kind === "published"
@@ -484,7 +528,10 @@ export default function App() {
           </span>
           <h3>{c(item.title)}</h3>
           <div className="card-meta">
-            {t("3 min read", "3 min lukuaika")} <Icon name="arrow" />
+            {item.kind === "published"
+              ? t("Read the story", "Lue juttu")
+              : t("Explore the example", "Tutustu esimerkkiin")}{" "}
+            <Icon name="arrow" />
           </div>
         </button>
       </article>
@@ -803,7 +850,21 @@ export default function App() {
         </nav>
       </header>
       <div id="main-content" tabIndex={-1} />
-      {view === "reader" ? (
+      {view === "notfound" ? (
+        <main className="wrap page-heading not-found">
+          <span className="eyebrow">404</span>
+          <h1>{t("This page is not here.", "Tätä sivua ei löytynyt.")}</h1>
+          <p>
+            {t(
+              "Return to the Oulu reader view to continue.",
+              "Jatka palaamalla Oulun lukijanäkymään.",
+            )}
+          </p>
+          <button className="primary" onClick={() => navigate("reader")}>
+            {t("Back to Oulu", "Takaisin Ouluun")}
+          </button>
+        </main>
+      ) : view === "reader" ? (
         story ? (
           renderStory()
         ) : (
@@ -811,11 +872,12 @@ export default function App() {
             <section className="section-intro">
               <div>
                 <span className="eyebrow">
-                  {t("A LOCAL PERSPECTIVE", "PAIKALLINEN NÄKÖKULMA")}
+                  {t(
+                    "LOCAL LIFE · ENGLISH & FINNISH",
+                    "PAIKALLINEN ELÄMÄ · SUOMI JA ENGLANTI",
+                  )}
                 </span>
-                <h1>
-                  {t("A little closer to home.", "Hieman lähempänä kotia.")}
-                </h1>
+                <h1>{t("Oulu, explained.", "Oulu, ymmärrettävästi.")}</h1>
                 <span className="intro-sub">
                   {t(
                     "Local stories, with the context you need.",
@@ -1016,8 +1078,8 @@ export default function App() {
                   </span>
                 </div>
                 <div className="story-grid">
-                  {state.stories.map((item, i) => (
-                    <StoryCard key={item.id} item={item} index={i} />
+                  {state.stories.map((item) => (
+                    <StoryCard key={item.id} item={item} />
                   ))}
                 </div>
               </section>
@@ -1040,8 +1102,8 @@ export default function App() {
                       s.group === "everyone" ||
                       s.group === group,
                   )
-                  .map((item, i) => (
-                    <StoryCard key={item.id} item={item} index={i} />
+                  .map((item) => (
+                    <StoryCard key={item.id} item={item} />
                   ))}
               </div>
             </section>
@@ -1058,7 +1120,12 @@ export default function App() {
                 "KESTÄVÄ PAIKALLINEN TOIMITUS",
               )}
             </span>
-            <h1>{t("A place to belong.", "Paikka, johon kuulua.")}</h1>
+            <h1>
+              {t(
+                "Support independent local reporting.",
+                "Tue riippumatonta paikallisjournalismia.",
+              )}
+            </h1>
             <p>
               {t(
                 "Independent local journalism, supported by the people who need it.",
@@ -1085,8 +1152,8 @@ export default function App() {
               </span>
               <h2>
                 {t(
-                  "Help your people feel at home in Oulu.",
-                  "Auta ihmisiäsi kotiutumaan Ouluun.",
+                  "An Oulu briefing for your international team.",
+                  "Oulu-viikkokirje kansainväliselle tiimillesi.",
                 )}
               </h2>
               <p>
@@ -1184,6 +1251,14 @@ export default function App() {
                   )}
                 </small>
               </form>
+              {state.pilotInterests.length > 0 && (
+                <p className="persistent-success" role="status">
+                  {t(
+                    "Pilot interest recorded in this browser. No request has been sent.",
+                    "Pilottikiinnostus tallennettu tähän selaimeen. Pyyntöä ei ole lähetetty.",
+                  )}
+                </p>
+              )}
             </div>
           </section>
           <div className="section-title">
