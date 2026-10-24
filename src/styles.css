@@ -3085,3 +3085,30 @@ select {
 .assistant-code small {
   color: var(--muted);
 }
+/* Tyyliviitteet ja lähdevertailu toimittajan paneelissa */
+.style-refs {
+  margin: 6px 0;
+  padding-left: 20px;
+  overflow-wrap: anywhere;
+}
+.style-refs li {
+  margin-bottom: 6px;
+}
+.assistant-plan {
+  display: grid;
+  gap: 6px;
+}
+.source-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.source-compare p {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .source-compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

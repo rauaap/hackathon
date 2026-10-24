@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { AssistDraft } from "../api/news.ts";
+import type { AssistDraft, NewsResponse, StyleMatch } from "../api/news.ts";
 import type { Lang, SourceLead } from "./data";
 
 type Failure =
@@ -37,16 +37,17 @@ export const leadId = (lead: SourceLead) => {
   const n = lead.url.match(/\/(\d{5,})\/?$/)?.[1];
   return n ? `kaleva-${n}` : null;
 };
-function cachedAvailability(): boolean | null {
+function cachedFeed(): Partial<NewsResponse> | null {
   try {
     const raw = localStorage.getItem("kaleva-local-news-cache-v1");
-    const data = raw ? JSON.parse(raw) : null;
-    return typeof data?.assistant?.available === "boolean"
-      ? data.assistant.available
-      : null;
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
+}
+function cachedAvailability(): boolean | null {
+  const available = cachedFeed()?.assistant?.available;
+  return typeof available === "boolean" ? available : null;
 }
 
 export default function AssistantPanel({
@@ -68,6 +69,59 @@ export default function AssistantPanel({
   const pending = useRef(false);
   const [code, setCode] = useState(readCode);
   const id = leadId(lead);
+  // Tyyliviitteiden haku on deterministinen ja näkyy toimittajalle jo ennen mallikutsua.
+  const feed = cachedFeed();
+  const planned: StyleMatch[] | null = id
+    ? (feed?.items?.find((i) => i.id === id)?.styleReferences ?? null)
+    : null;
+  const catalog = feed?.styleGuide?.references ?? [];
+  const refList = (
+    matches: StyleMatch[],
+    used: string[] = [],
+    showUse = false,
+  ) => (
+    <ul className="style-refs">
+      {matches.map((m) => {
+        const ref =
+          catalog.find((r) => r.id === m.id) ??
+          (m as StyleMatch & {
+            title?: string;
+            url?: string;
+            publishedAt?: string;
+          });
+        return (
+          <li key={m.id}>
+            <strong>{m.id}</strong>{" "}
+            {ref?.url ? (
+              <a href={ref.url} target="_blank" rel="noreferrer" lang="en">
+                {ref.title} ↗
+              </a>
+            ) : (
+              m.id
+            )}{" "}
+            <span className="muted">
+              · {ref?.publishedAt?.slice(0, 10)} ·{" "}
+              {t("historical, style only", "historiallinen, vain tyyli")}
+            </span>
+            <br />
+            <small>
+              {t("Matched on", "Osuma")}:{" "}
+              {[
+                ...m.topics,
+                ...m.terms.map((x) => `“${x.label}” → ${x.en}`),
+              ].join(", ")}
+              {showUse &&
+                ` · ${used.includes(m.id) ? t("model reports using it", "malli kertoo käyttäneensä") : t("model did not cite it", "malli ei maininnut")}`}
+            </small>
+          </li>
+        );
+      })}
+    </ul>
+  );
+  const caveat = t(
+    "Kaleva’s English-language archive is from 2012: a historical style and terminology reference, not necessarily current editorial standards and never evidence for this story. Only the newsroom’s own style notes and term pairs are sent to the model, not Kaleva’s article text.",
+    "Kalevan englanninkielinen arkisto on vuodelta 2012: historiallinen tyyli- ja termiviite, ei välttämättä nykyinen linja eikä koskaan todiste tästä jutusta. Mallille lähetetään vain toimituksen omat tyylihavainnot ja termiparit, ei Kalevan artikkelitekstiä.",
+  );
   async function run() {
     if (pending.current || !id) return;
     pending.current = true;
@@ -223,8 +277,72 @@ export default function AssistantPanel({
       <div role="status">
         {failure && <p className="warning-box">{messages[failure]}</p>}
       </div>
+      {!existing && planned && (
+        <div className="assistant-plan">
+          <strong>
+            {planned.length
+              ? t(
+                  `Translation mode: historical Kaleva style-grounded, 2012 (${planned.length} reference${planned.length > 1 ? "s" : ""})`,
+                  `Käännöstila: Kalevan historialliseen tyyliin pohjautuva, 2012 (${planned.length} viite${planned.length > 1 ? "ttä" : ""})`,
+                )
+              : t(
+                  "Translation mode: standard translation (no relevant Kaleva English reference found)",
+                  "Käännöstila: tavallinen käännös (osuvaa Kalevan englanninkielistä viitettä ei löytynyt)",
+                )}
+          </strong>
+          {planned.length > 0 && refList(planned)}
+          <p className="privacy-note">{caveat}</p>
+        </div>
+      )}
       {existing && (
         <div className="assistant-result">
+          <div className="source-compare">
+            <div>
+              <span className="eyebrow">
+                {t("FINNISH SOURCE (FEED)", "SUOMENKIELINEN LÄHDE (SYÖTE)")}
+              </span>
+              <p lang="fi">
+                <strong>{existing.source.title}</strong>
+                <br />
+                {existing.source.description ??
+                  t("(no description in the feed)", "(syötteessä ei kuvausta)")}
+              </p>
+            </div>
+            <div>
+              <span className="eyebrow">
+                {t("PROPOSED ENGLISH (AI)", "EHDOTETTU ENGLANTI (AI)")}
+              </span>
+              <p lang="en">
+                <strong>{existing.output.headline_en}</strong>
+                <br />
+                {existing.output.description_en ||
+                  t("(no description)", "(ei kuvausta)")}
+              </p>
+            </div>
+          </div>
+          <p>
+            <strong>
+              {existing.mode === "style-grounded"
+                ? t(
+                    "Translation guided by historical (2012) Kaleva English style references",
+                    "Käännöstä ohjasivat Kalevan historialliset (2012) englanninkieliset tyyliviitteet",
+                  )
+                : t(
+                    "Standard translation: no relevant Kaleva English reference was found, so no Kaleva-specific style was applied.",
+                    "Tavallinen käännös: osuvaa Kalevan englanninkielistä viitettä ei löytynyt, joten Kalevan tyyliä ei käytetty.",
+                  )}
+            </strong>
+          </p>
+          {existing.mode === "style-grounded" && (
+            <>
+              {refList(
+                existing.styleReferences,
+                existing.output.style_references_used,
+                true,
+              )}
+              <p className="privacy-note">{caveat}</p>
+            </>
+          )}
           <p className="privacy-note">
             {t("Generated by", "Tuottanut")} {existing.model} ·{" "}
             {new Date(existing.generatedAt).toLocaleString(
