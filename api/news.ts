@@ -690,7 +690,7 @@ export function classify(item: Normalized, now: Date): NewsItem {
 
 async function readFeed() {
   const response = await fetch(FEED_URL, {
-    signal: AbortSignal.timeout(9000),
+    signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
     headers: { Accept: "application/rss+xml, text/xml" },
     redirect: "error",
   });
@@ -1260,6 +1260,10 @@ let sdkClient: AssistClient | null = null;
 export function setAssistantClient(client: AssistClient | null) {
   clientOverride = client;
 }
+// Vercel lopettaa funktion 60 s kohdalla (vercel.json). Syötteen haku (≤ 9 s) ja taustapalvelun
+// odotus (≤ 45 s) mahtuvat siihen, joten editori saa aina hallitun virheen eikä katkennutta pyyntöä.
+export const FEED_TIMEOUT_MS = 9_000;
+export const BACKEND_TIMEOUT_MS = 45_000;
 // Mallikutsu tehdään erillisellä Agent SDK -palvelimella (agent-server/), joten Vercel ei tarvitse Anthropic-avainta.
 const backendUrl = () => process.env.AGENT_BACKEND_URL ?? "";
 const backendSecret = () => process.env.AGENT_BACKEND_SECRET ?? "";
@@ -1334,7 +1338,7 @@ async function assistantClient(): Promise<AssistClient> {
             prompt: params.messages[0].content,
             schema: params.output_config?.format?.schema,
           }),
-          signal: AbortSignal.timeout(58_000),
+          signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
         });
         if (!response.ok)
           throw new Error(`Agent backend returned ${response.status}`);
