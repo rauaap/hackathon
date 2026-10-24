@@ -27,7 +27,7 @@ export type TopicId =
   | "economy"
   | "politics"
   | "sport";
-export type Locality = "oulu" | "region" | "none";
+export type Locality = "oulu" | "region" | "elsewhere" | "none";
 export type Reason =
   | { type: "topic"; topic: TopicId; points: number; matched: string[] }
   | { type: "locality"; level: Locality; points: number; matched: string[] }
@@ -167,7 +167,6 @@ const TOPICS: Record<TopicId, string[]> = {
     "konsert",
     "näyttely",
     "messut",
-    "kilpailut",
     "juhla",
     "valofestivaal",
     "ohjelmaa",
@@ -226,8 +225,10 @@ const TOPICS: Record<TopicId, string[]> = {
     "kärpät",
     "valmentaj",
     "em-kilpailu",
+    "mestaruuskilpailu",
   ],
 };
+// Oulun kaupunki ja sen kaupunginosat (myös vuoden 2013 kuntaliitoksen alueet).
 const OULU = [
   "oulu",
   "oulun",
@@ -237,6 +238,7 @@ const OULU = [
   "kiiminki",
   "kiimingi",
   "haukipu",
+  "yli-ii",
   "ritaharju",
   "ideapark",
   "pohjantie",
@@ -244,28 +246,67 @@ const OULU = [
   "kaakkuri",
   "linnanmaa",
   "hiukkavaara",
+  "raksila",
+  "tuira",
 ];
+// Oulun seutu: naapurikunnat, joista moni käy Oulussa töissä tai koulussa.
+// Lyhyet nimet täsmäävät vain kokonaisina sanoina ("ii" ei osu muihin sanoihin).
 const REGION = [
   "muhos",
+  "muhoks",
   "kempele",
   "liminga",
   "liminka",
-  "ii",
-  "iin",
-  "raahe",
-  "kajaani",
-  "nivala",
-  "ylivieska",
-  "kemi",
-  "kemissä",
-  "tornio",
-  "rovaniemi",
-  "pudasjärv",
-  "kuusamo",
   "tyrnävä",
-  "lumijoe",
+  "lumijo",
+  "utajärv",
   "pohjois-pohjanmaa",
 ];
+const REGION_EXACT = ["ii", "iin", "iissä", "iistä", "iihin"];
+// Muut paikkakunnat: juttu koskee muuta kuin Oulun aluetta.
+const ELSEWHERE = [
+  "raahe",
+  "kajaan",
+  "nivala",
+  "ylivieska",
+  "tornio",
+  "rovanie",
+  "pudasjärv",
+  "kuusamo",
+  "kalajo",
+  "haapaje",
+  "helsin",
+  "tampere",
+  "turku",
+  "turun",
+  "turussa",
+  "espoo",
+  "vantaa",
+  "vantaal",
+  "jyväskyl",
+  "kuopio",
+  "joensuu",
+  "vaasa",
+  "seinäjo",
+  "lappeenran",
+  "hämeenlin",
+];
+// "kemi" alkuosana osuisi sanaan "kemikaali", joten vain taivutusmuodot.
+const ELSEWHERE_EXACT = ["kemi", "kemin", "kemissä", "kemistä", "kemiin"];
+// Sanat, jotka näyttävät aiheen vartalolta mutta tarkoittavat muuta.
+const NOT_TOPIC = [
+  "sähköpost",
+  "pilvipalvel",
+  "kaupunginos",
+  "lentopallo",
+  "katum",
+  "katua",
+  "katuu",
+  "katui",
+  "katuvat",
+];
+const placeMatch = (words: string[], stems: string[], exact: string[]) =>
+  words.filter((w) => exact.includes(w) || stems.some((s) => w.startsWith(s)));
 // Painot kertovat, kuinka paljon aihe merkitsee kullekin yleisölle. Ne ovat demon oletuksia, eivät mitattua tietoa.
 export const WEIGHTS: Record<Audience, Record<TopicId, number>> = {
   students: {
@@ -297,10 +338,12 @@ export const WEIGHTS: Record<Audience, Record<TopicId, number>> = {
     sport: 0.5,
   },
 };
+// Paikallisuus painaa: Oulun juttu nousee, muualla tapahtuva tai paikaton laskee.
 const LOCALITY_POINTS: Record<Locality, number> = {
   oulu: 2,
-  region: 0.5,
-  none: 0,
+  region: 1,
+  none: -1,
+  elsewhere: -2,
 };
 const KIND_POINTS: Record<ItemKind, number> = {
   news: 0,
@@ -437,19 +480,23 @@ export function normalize(xml: string): {
 
 export function classify(item: Normalized, now: Date): NewsItem {
   const words = tokens(`${item.title} ${item.description ?? ""}`);
+  const topicWords = words.filter(
+    (w) => !NOT_TOPIC.some((x) => w.startsWith(x)),
+  );
   const topics = (Object.keys(TOPICS) as TopicId[]).flatMap((id) => {
-    const matched = match(words, TOPICS[id]);
+    const matched = match(topicWords, TOPICS[id]);
     return matched.length ? [{ id, matched }] : [];
   });
   const oulu = match(words, OULU);
-  const region = words.filter((w) =>
-    REGION.some((r) => (r.length <= 3 ? w === r : w.startsWith(r))),
-  );
+  const region = placeMatch(words, REGION, REGION_EXACT);
+  const elsewhere = placeMatch(words, ELSEWHERE, ELSEWHERE_EXACT);
   const locality = oulu.length
     ? { level: "oulu" as const, matched: oulu }
     : region.length
       ? { level: "region" as const, matched: region }
-      : { level: "none" as const, matched: [] };
+      : elsewhere.length
+        ? { level: "elsewhere" as const, matched: elsewhere }
+        : { level: "none" as const, matched: [] };
   const hours = item.publishedAt
     ? Math.max(0, (now.valueOf() - Date.parse(item.publishedAt)) / 3.6e6)
     : null;
@@ -461,13 +508,12 @@ export function classify(item: Normalized, now: Date): NewsItem {
       points: WEIGHTS[audience][t.id],
       matched: t.matched,
     }));
-    if (locality.level !== "none")
-      reasons.push({
-        type: "locality",
-        level: locality.level,
-        points: LOCALITY_POINTS[locality.level],
-        matched: locality.matched,
-      });
+    reasons.push({
+      type: "locality",
+      level: locality.level,
+      points: LOCALITY_POINTS[locality.level],
+      matched: locality.matched,
+    });
     if (hours !== null)
       reasons.push({
         type: "recency",

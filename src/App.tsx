@@ -344,7 +344,7 @@ export default function App() {
     g === "students"
       ? t("Students", "Opiskelijat")
       : g === "working"
-        ? t("Working & family", "Työ ja perhe")
+        ? t("Professionals & families", "Työ ja perhe")
         : t("Everyone", "Kaikki");
   const hasUnsupported = Object.values(unsupported).some((s) =>
     Object.values(state.draft).some((body) =>
@@ -1188,17 +1188,31 @@ export default function App() {
               <div>
                 <span className="eyebrow">
                   {t(
-                    "LOCAL LIFE · ENGLISH & FINNISH",
-                    "PAIKALLINEN ELÄMÄ · SUOMI JA ENGLANTI",
+                    "KALEVA NEWS · FOR INTERNATIONAL OULU",
+                    "KALEVAN UUTISET · KANSAINVÄLISELLE OULULLE",
                   )}
                 </span>
                 <h1>{t("Oulu, explained.", "Oulu, ymmärrettävästi.")}</h1>
                 <span className="intro-sub">
                   {t(
-                    "Local stories, with the context you need.",
-                    "Paikalliset jutut ja tarvitsemasi taustat.",
+                    "Kaleva’s Finnish local news, picked for Oulu’s international residents and explained in English. A human editor approves every explainer.",
+                    "Kalevan suomenkieliset paikallisuutiset valittuina Oulun kansainvälisille asukkaille ja selitettyinä englanniksi. Toimittaja hyväksyy jokaisen selityksen.",
                   )}
                 </span>
+                <button
+                  className="text-button feed-jump"
+                  onClick={() =>
+                    document
+                      .getElementById("news-feed-title")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                >
+                  {t(
+                    "Today’s Kaleva news, ranked for you",
+                    "Kalevan tämän päivän uutiset sinulle järjestettynä",
+                  )}{" "}
+                  ↓
+                </button>
               </div>
               <div className="reader-filter">
                 <span>

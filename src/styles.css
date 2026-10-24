@@ -3112,3 +3112,18 @@ select {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Arvolupaus näkyy ensinäkymässä ja vie suoraan Kalevan syötteeseen. */
+.section-intro .intro-sub {
+  display: block;
+  max-width: 62ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.section-intro .feed-jump {
+  margin-top: 10px;
+}
+#news-feed-title {
+  scroll-margin-top: 24px;
+}
