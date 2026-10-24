@@ -53,8 +53,9 @@ import type { AssistDraft } from "../api/news.ts";
 import LiveSources from "./LiveSources";
 import NewsFeed from "./NewsFeed";
 import AssistantPanel from "./AssistantPanel";
+import PresenterMode from "./PresenterMode";
 
-type View = "reader" | "offers" | "newsroom" | "notfound";
+type View = "reader" | "offers" | "newsroom" | "presenter" | "notfound";
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, ReactNode> = {
     arrow: (
@@ -256,15 +257,22 @@ export default function App() {
   const [group, setGroup] = useState<Group>("everyone");
   const viewFromHash = (): View =>
     location.pathname !== "/" ||
-    !["", "#news", "#offers", "#newsroom", "#main-content"].includes(
-      location.hash,
-    )
+    ![
+      "",
+      "#news",
+      "#offers",
+      "#newsroom",
+      "#presenter",
+      "#main-content",
+    ].includes(location.hash)
       ? "notfound"
       : location.hash === "#offers"
         ? "offers"
         : location.hash === "#newsroom"
           ? "newsroom"
-          : "reader";
+          : location.hash === "#presenter"
+            ? "presenter"
+            : "reader";
   const [view, setView] = useState<View>(viewFromHash);
   const [modal, setModal] = useState<
     "question" | "checkout" | "error" | "reset" | null
@@ -356,9 +364,11 @@ export default function App() {
         ? t("Membership & employer pilot", "Jäsenyys ja työnantajapilotti")
         : view === "newsroom"
           ? t("Newsroom demo", "Toimitusdemo")
-          : view === "notfound"
-            ? t("Page not found", "Sivua ei löytynyt")
-            : t("Oulu, explained", "Oulu, ymmärrettävästi");
+          : view === "presenter"
+            ? t("Presenter Mode", "Esittäjänäkymä")
+            : view === "notfound"
+              ? t("Page not found", "Sivua ei löytynyt")
+              : t("Oulu, explained", "Oulu, ymmärrettävästi");
     document.title = `${pageTitle} | Kaleva Local`;
     document
       .querySelector('meta[name="description"]')
@@ -450,6 +460,113 @@ export default function App() {
     !hasUnsupported &&
     !hasPlaceholders &&
     !state.rejected;
+  // Toimittajan toiminnot. Toimitusnäkymä ja Presenter Mode käyttävät samoja funktioita,
+  // joten tarkistusportit ovat molemmissa täsmälleen samat.
+  const canApprove =
+    state.fact &&
+    state.language &&
+    !hasUnsupported &&
+    !hasPlaceholders &&
+    !state.rejected &&
+    !!state.draft.en.trim() &&
+    !!state.draft.fi.trim();
+  function selectForCoverage(id: string) {
+    setState((s) => ({
+      ...s,
+      selected: id,
+      approval: null,
+      fact: false,
+      language: false,
+      rejected: false,
+    }));
+    advanceQuestion(id, "review");
+    setDraftOpen(false);
+  }
+  function setReason(reason: string) {
+    setState((s) => ({
+      ...s,
+      reason,
+      approval: null,
+      fact: false,
+      language: false,
+    }));
+  }
+  function openSelectedDraft() {
+    openDraft(state.selected);
+    advanceQuestion(state.selected, "investigating");
+    setDraftOpen(true);
+  }
+  function replaceUnsupported() {
+    setState((s) => ({
+      ...s,
+      draft: {
+        en: s.draft.en.replace(unsupported.en, supportedReplacement.en),
+        fi: s.draft.fi.replace(unsupported.fi, supportedReplacement.fi),
+      },
+      revision: s.revision + 1,
+      approval: null,
+      fact: false,
+      language: false,
+    }));
+  }
+  function setReview(kind: "fact" | "language", checked: boolean) {
+    setState((s) => ({ ...s, [kind]: checked, approval: null }));
+  }
+  // Palauttaa vain eVaka-esityksen alkutilaan; muut kysymykset, jutut ja asetukset säilyvät.
+  function resetPresenterDemo() {
+    setState((s) => {
+      const fresh = initialState();
+      const prepared = fresh.questions.find(
+        (q) => q.id === PREPARED_QUESTION_ID,
+      )!;
+      const isDemoAnswer = (st: Story) =>
+        st.questionId === PREPARED_QUESTION_ID ||
+        st.question?.en === prepared.text.en;
+      const removed = new Set(
+        s.stories.filter(isDemoAnswer).map((st) => st.id),
+      );
+      const drafts = { ...s.drafts };
+      delete drafts[PREPARED_QUESTION_ID];
+      const ai = { ...s.ai };
+      delete ai[PREPARED_QUESTION_ID];
+      return {
+        ...s,
+        questions: s.questions.some((q) => q.id === PREPARED_QUESTION_ID)
+          ? s.questions.map((q) =>
+              q.id === PREPARED_QUESTION_ID ? prepared : q,
+            )
+          : [prepared, ...s.questions],
+        stories: s.stories.filter((st) => !removed.has(st.id)),
+        reports: s.reports.filter((x) => !removed.has(x.storyId)),
+        selected: "",
+        reason: "",
+        readerNeed: fresh.readerNeed,
+        draft: { ...draftInitial },
+        draftFor: PREPARED_QUESTION_ID,
+        drafts,
+        ai,
+        revision: s.revision + 1,
+        fact: false,
+        language: false,
+        approval: null,
+        rejected: false,
+      };
+    });
+    setDraftOpen(false);
+    setToast(
+      t(
+        "Presenter demo reset. Other local data was kept.",
+        "Esitys palautettu alkuun. Muut paikalliset tiedot säilyivät.",
+      ),
+    );
+  }
+  function approveDraft() {
+    if (!canApprove) return;
+    setState((s) => ({
+      ...s,
+      approval: { revision: s.revision, body: { ...s.draft } },
+    }));
+  }
   // Tallentaa avustajan tuloksen luonnokseksi; hyväksynnät nollataan ja julkaisu vaatii ihmistarkistuksen.
   function applyAiDraft(questionId: string, d: AssistDraft, cached: boolean) {
     setState((s) =>
@@ -1230,83 +1347,117 @@ export default function App() {
           )}
         </span>
       </div>
-      <header className="wrap">
-        <div className="utility">
-          <span>
-            <Icon name="pin" size={14} /> OULU, FINLAND
-          </span>
-          <div>
-            <button
-              className="newsroom-link"
-              onClick={() => navigate("newsroom")}
-            >
-              <span className="tiny-square" />
-              {t("Newsroom demo", "Toimitusdemo")} <span>↗</span>
-            </button>
-            <span className="utility-divider" />
-            <button
-              className={lang === "en" ? "language active" : "language"}
-              onClick={() => setLang("en")}
-              aria-pressed={lang === "en"}
-            >
-              EN
-            </button>
-            <button
-              className={lang === "fi" ? "language active" : "language"}
-              onClick={() => setLang("fi")}
-              aria-pressed={lang === "fi"}
-            >
-              FI
-            </button>
-          </div>
-        </div>
-        <div className="masthead-row">
-          <button
-            className="masthead"
-            onClick={() => navigate("reader")}
-            aria-label="Kaleva Local home"
-          >
-            Kaleva
+      {view !== "presenter" && (
+        <header className="wrap">
+          <div className="utility">
             <span>
-              Local<span className="masthead-dot">.</span>
+              <Icon name="pin" size={14} /> OULU, FINLAND
             </span>
-          </button>
-          <p>
-            {t("Understand Oulu.", "Ymmärrä Oulua.")}
-            <br />
-            <em>{t("Feel at home.", "Tunne olevasi kotona.")}</em>
-          </p>
-          <button
-            className="primary masthead-cta"
-            onClick={() => navigate("offers")}
-          >
-            {t("Discover Local Plus", "Tutustu Local Plussaan")}{" "}
-            <Icon name="arrow" size={16} />
-          </button>
-        </div>
-        <nav aria-label={t("Main navigation", "Päävalikko")}>
-          <div>
+            <div>
+              <button
+                className="newsroom-link"
+                onClick={() => navigate("newsroom")}
+              >
+                <span className="tiny-square" />
+                {t("Newsroom demo", "Toimitusdemo")} <span>↗</span>
+              </button>
+              <span className="utility-divider" />
+              <button
+                className={lang === "en" ? "language active" : "language"}
+                onClick={() => setLang("en")}
+                aria-pressed={lang === "en"}
+              >
+                EN
+              </button>
+              <button
+                className={lang === "fi" ? "language active" : "language"}
+                onClick={() => setLang("fi")}
+                aria-pressed={lang === "fi"}
+              >
+                FI
+              </button>
+            </div>
+          </div>
+          <div className="masthead-row">
             <button
-              className={view === "reader" ? "nav-item selected" : "nav-item"}
+              className="masthead"
               onClick={() => navigate("reader")}
+              aria-label="Kaleva Local home"
             >
-              {t("Your Oulu", "Sinun Oulusi")}
+              Kaleva
+              <span>
+                Local<span className="masthead-dot">.</span>
+              </span>
             </button>
+            <p>
+              {t("Understand Oulu.", "Ymmärrä Oulua.")}
+              <br />
+              <em>{t("Feel at home.", "Tunne olevasi kotona.")}</em>
+            </p>
             <button
-              className={view === "offers" ? "nav-item selected" : "nav-item"}
+              className="primary masthead-cta"
               onClick={() => navigate("offers")}
             >
-              {t("Membership & business", "Jäsenyys ja yritykset")}
+              {t("Discover Local Plus", "Tutustu Local Plussaan")}{" "}
+              <Icon name="arrow" size={16} />
             </button>
           </div>
-          <span className="nav-note">
-            <span className="status-dot" />
-            {t("Independent by design", "Riippumattomuus ensin")}
-          </span>
-        </nav>
-      </header>
+          <nav aria-label={t("Main navigation", "Päävalikko")}>
+            <div>
+              <button
+                className={view === "reader" ? "nav-item selected" : "nav-item"}
+                onClick={() => navigate("reader")}
+              >
+                {t("Your Oulu", "Sinun Oulusi")}
+              </button>
+              <button
+                className={view === "offers" ? "nav-item selected" : "nav-item"}
+                onClick={() => navigate("offers")}
+              >
+                {t("Membership & business", "Jäsenyys ja yritykset")}
+              </button>
+            </div>
+            <span className="nav-note">
+              <span className="status-dot" />
+              {t("Independent by design", "Riippumattomuus ensin")}
+            </span>
+          </nav>
+        </header>
+      )}
       <div id="main-content" tabIndex={-1} />
-      {view === "notfound" ? (
+      {view === "presenter" ? (
+        <PresenterMode
+          lang={lang}
+          state={state}
+          question={
+            state.questions.find((q) => q.id === PREPARED_QUESTION_ID) ??
+            initialState().questions[0]
+          }
+          status={questionStatus(
+            state.questions.find((q) => q.id === PREPARED_QUESTION_ID) ??
+              initialState().questions[0],
+            state.stories,
+          )}
+          answer={answerFor(PREPARED_QUESTION_ID)}
+          hasUnsupported={hasUnsupported}
+          canApprove={canApprove}
+          validApproval={validApproval}
+          statusName={statusName}
+          actions={{
+            support: () => supportQuestion(PREPARED_QUESTION_ID),
+            select: () => selectForCoverage(PREPARED_QUESTION_ID),
+            setReason,
+            openDraft: openSelectedDraft,
+            replaceUnsupported,
+            editDraft,
+            setReview,
+            approve: approveDraft,
+            publish,
+            reset: resetPresenterDemo,
+            exit: () => navigate("reader"),
+          }}
+        />
+      ) : view === "notfound" ? (
         <main className="wrap page-heading not-found">
           <span className="eyebrow">404</span>
           <h1>{t("This page is not here.", "Tätä sivua ei löytynyt.")}</h1>
@@ -2179,9 +2330,20 @@ export default function App() {
                   "Sisäänkirjautumista ei ole. Kaikki täällä valittu, hyväksytty tai julkaistu tallentuu vain tähän selaimeen eikä näy muille lukijoille tai Kalevalle. Ainoa palvelimen suojaus on toimittajan pääsykoodi maksulliseen AI-vaiheeseen. Oikea toimitus tarvitsisi henkilökohtaiset toimittajatunnukset ja palvelimen tarkistaman julkaisun.",
                 )}
               </p>
-              <button className="text-button" onClick={() => setModal("reset")}>
-                {t("Reset demo to the start ↻", "Palauta demo alkuun ↻")}
-              </button>
+              <div className="sim-notice-actions">
+                <button
+                  className="text-button"
+                  onClick={() => navigate("presenter")}
+                >
+                  {t("Open Presenter Mode →", "Avaa esittäjänäkymä →")}
+                </button>
+                <button
+                  className="text-button"
+                  onClick={() => setModal("reset")}
+                >
+                  {t("Reset demo to the start ↻", "Palauta demo alkuun ↻")}
+                </button>
+              </div>
             </div>
           </section>
           <div className="workflow-strip">
@@ -2277,18 +2439,7 @@ export default function App() {
                     </span>
                     <button
                       className="text-button"
-                      onClick={() => {
-                        setState((s) => ({
-                          ...s,
-                          selected: q.id,
-                          approval: null,
-                          fact: false,
-                          language: false,
-                          rejected: false,
-                        }));
-                        advanceQuestion(q.id, "review");
-                        setDraftOpen(false);
-                      }}
+                      onClick={() => selectForCoverage(q.id)}
                     >
                       {state.selected === q.id
                         ? t("Selected ✓", "Valittu ✓")
@@ -2502,15 +2653,7 @@ export default function App() {
                 <textarea
                   value={state.reason}
                   maxLength={700}
-                  onChange={(e) =>
-                    setState((s) => ({
-                      ...s,
-                      reason: e.target.value,
-                      approval: null,
-                      fact: false,
-                      language: false,
-                    }))
-                  }
+                  onChange={(e) => setReason(e.target.value)}
                   placeholder={t(
                     "Explain the public interest and the limits of the source.",
                     "Perustele yleinen etu ja lähteen rajoitukset.",
@@ -2520,15 +2663,7 @@ export default function App() {
               {state.selected === PREPARED_QUESTION_ID && (
                 <button
                   className="text-button"
-                  onClick={() =>
-                    setState((s) => ({
-                      ...s,
-                      reason: c(evakaInsight.reason),
-                      approval: null,
-                      fact: false,
-                      language: false,
-                    }))
-                  }
+                  onClick={() => setReason(c(evakaInsight.reason))}
                 >
                   {t(
                     "Use the Community Insight as the reason (editable)",
@@ -2560,11 +2695,7 @@ export default function App() {
                     !selectedQuestion?.source) ||
                   state.reason.trim().length < 10
                 }
-                onClick={() => {
-                  openDraft(state.selected);
-                  advanceQuestion(state.selected, "investigating");
-                  setDraftOpen(true);
-                }}
+                onClick={openSelectedDraft}
               >
                 {selectedQuestion?.source
                   ? t("Open source brief", "Avaa lähdepohja")
@@ -2732,28 +2863,7 @@ export default function App() {
                       "Tiedote on ristiriidassa väitteen kanssa: se mainitsee Androidin ja iOS:n, suosittelee Androidilla Chromea ja rajaa iPhonen ilmoitukset aloitusnäytön kuvakkeeseen. Poista väite molemmista kieliversioista tai käytä lähteen mukaista korvausta. Muutkin muokkaukset vaativat faktantarkistuksen.",
                     )}
                   </p>
-                  <button
-                    className="secondary"
-                    onClick={() =>
-                      setState((s) => ({
-                        ...s,
-                        draft: {
-                          en: s.draft.en.replace(
-                            unsupported.en,
-                            supportedReplacement.en,
-                          ),
-                          fi: s.draft.fi.replace(
-                            unsupported.fi,
-                            supportedReplacement.fi,
-                          ),
-                        },
-                        revision: s.revision + 1,
-                        approval: null,
-                        fact: false,
-                        language: false,
-                      }))
-                    }
-                  >
+                  <button className="secondary" onClick={replaceUnsupported}>
                     {t(
                       "Replace unsupported assertion",
                       "Korvaa perusteeton väite",
@@ -2786,13 +2896,7 @@ export default function App() {
                   <input
                     type="checkbox"
                     checked={state.fact}
-                    onChange={(e) =>
-                      setState((s) => ({
-                        ...s,
-                        fact: e.target.checked,
-                        approval: null,
-                      }))
-                    }
+                    onChange={(e) => setReview("fact", e.target.checked)}
                   />
                   {t(
                     "I checked both drafts against the source, dates, interpretation and unresolved claims.",
@@ -2803,13 +2907,7 @@ export default function App() {
                   <input
                     type="checkbox"
                     checked={state.language}
-                    onChange={(e) =>
-                      setState((s) => ({
-                        ...s,
-                        language: e.target.checked,
-                        approval: null,
-                      }))
-                    }
+                    onChange={(e) => setReview("language", e.target.checked)}
                   />
                   {t(
                     "I reviewed the English and Finnish for clarity and equivalent meaning.",
@@ -2837,24 +2935,8 @@ export default function App() {
                   </button>
                   <button
                     className="secondary"
-                    disabled={
-                      !state.fact ||
-                      !state.language ||
-                      hasUnsupported ||
-                      hasPlaceholders ||
-                      state.rejected ||
-                      !state.draft.en.trim() ||
-                      !state.draft.fi.trim()
-                    }
-                    onClick={() =>
-                      setState((s) => ({
-                        ...s,
-                        approval: {
-                          revision: s.revision,
-                          body: { ...s.draft },
-                        },
-                      }))
-                    }
+                    disabled={!canApprove}
+                    onClick={approveDraft}
                   >
                     {t(
                       "Approve reviewed version",
@@ -3030,39 +3112,41 @@ export default function App() {
           </div>
         </main>
       )}
-      <footer className="wrap">
-        <div className="footer-top">
-          <button
-            className="footer-masthead"
-            onClick={() => navigate("reader")}
-          >
-            Kaleva Local<span>.</span>
-          </button>
-          <span>
-            {t(
-              "A clearer view of the place you call home.",
-              "Selkeämpi kuva paikasta, jota kutsut kodiksi.",
-            )}
-          </span>
-          <button className="text-button" onClick={() => setModal("reset")}>
-            {t("Reset demo", "Nollaa demo")} ↻
-          </button>
-        </div>
-        <div className="footer-bottom">
-          <span>
-            {t(
-              "Independent hackathon concept · Oulu · 2026",
-              "Riippumaton hackathon-konsepti · Oulu · 2026",
-            )}
-          </span>
-          <span>
-            {t(
-              "Local to this browser. No payments. No messages sent.",
-              "Vain tässä selaimessa. Ei maksuja. Ei lähetettyjä viestejä.",
-            )}
-          </span>
-        </div>
-      </footer>
+      {view !== "presenter" && (
+        <footer className="wrap">
+          <div className="footer-top">
+            <button
+              className="footer-masthead"
+              onClick={() => navigate("reader")}
+            >
+              Kaleva Local<span>.</span>
+            </button>
+            <span>
+              {t(
+                "A clearer view of the place you call home.",
+                "Selkeämpi kuva paikasta, jota kutsut kodiksi.",
+              )}
+            </span>
+            <button className="text-button" onClick={() => setModal("reset")}>
+              {t("Reset demo", "Nollaa demo")} ↻
+            </button>
+          </div>
+          <div className="footer-bottom">
+            <span>
+              {t(
+                "Independent hackathon concept · Oulu · 2026",
+                "Riippumaton hackathon-konsepti · Oulu · 2026",
+              )}
+            </span>
+            <span>
+              {t(
+                "Local to this browser. No payments. No messages sent.",
+                "Vain tässä selaimessa. Ei maksuja. Ei lähetettyjä viestejä.",
+              )}
+            </span>
+          </div>
+        </footer>
+      )}
       {storageError && (
         <div className="storage-warning" role="alert">
           {t(
@@ -3071,7 +3155,7 @@ export default function App() {
           )}
         </div>
       )}
-      {toast && (
+      {toast && view !== "presenter" && (
         <div className="toast" role="status">
           <Icon name="check" />
           <span>{toast}</span>

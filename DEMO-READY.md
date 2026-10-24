@@ -20,6 +20,52 @@ Production: https://kaleva-local.vercel.app · PR: https://github.com/rauaap/hac
 
 Supporting a question never changes its status. An editor decides.
 
+# Presenter Mode — Live Split-Screen Demo
+
+**URL:** https://kaleva-local.vercel.app/#presenter. You can also open it from **Newsroom demo ↗ → Open Presenter Mode →**.
+
+### Before presenting
+
+- **Browser:** Chrome or Edge, full screen (F11), zoom 100%, one tab only.
+- **Resolution:** 1920×1080 is best; 1280×720 works. Newsroom on the left (about 58%), reader on the right (about 42%).
+- **Reset:** click **Reset Presenter Demo ↻** at the top right. It resets only the eVaka demo; your other local data stays.
+- **Expected start:**
+  - The question shows *Submitted* on both sides, with 0 supports.
+  - The reader panel says *Waiting for editorial review*.
+  - Step 1 of the stepper is active.
+  - No answer is visible.
+- **Unstable internet:** the page needs the network only for its first load. Load it before you start presenting.
+
+### During presentation: 5 moments, 9 clicks
+
+| # | Click | Say |
+|---|---|---|
+| 1 | **1 · Select for coverage** | "An international parent asked this. The newsroom picks it up, and the reader sees it move to *Under editorial review*." |
+| 2 | **Use the Community Insight as the reason**, then **2 · Open prepared draft** | "The insight shows verified evidence from the City of Oulu notice and what is still unknown. The reader now sees *Being investigated*, but none of the draft." |
+| 3 | **3 · Replace unsupported assertion** | "The draft claimed it works on every phone. The source doesn't say that, so approval stays blocked until it is fixed." |
+| 4 | Tick **Fact review** and **Language review**, then **Approve this exact version** | "Two explicit human checks approve this exact version. The reader still sees nothing." |
+| 5 | **5 · Publish reviewed answer →**, then **FI** on the right | "Published. The reader gets the checked answer instantly, in English and Finnish." |
+
+**Timing:** the automated run takes about 2 s. With narration, expect about 35–45 s; time one rehearsal. Every safeguard stays explicit. Nothing is pre-ticked or combined.
+
+### The WOW moment
+
+When you click **Publish**, the right panel changes immediately, with no reload:
+- The status turns to green *Answer published*.
+- *Waiting…* becomes **Read the checked answer ↓**.
+- A green-edged answer card slides in, showing the approved English text, the question it answers, "Our question to the City of Oulu: not yet answered", the City of Oulu source link and the review disclosure.
+- **EN | FI** switches between the approved texts.
+
+### Honest limitations
+
+- Both panels share one browser's local state. This is not cross-device or real-time synchronisation.
+- The eVaka draft was prepared by the team, not by AI. One separate real AI generation, on a different RSS story, has succeeded.
+- The newsroom is a demonstration, not Kaleva's CMS. The fictional editor's approval is not a Kaleva journalist's approval.
+
+### Fallback
+
+If Presenter Mode fails, use the verified walkthrough below: Community Radar → Newsroom → Published Answer.
+
 ## 3. The 45–60-second walkthrough: exact clicks
 
 **Start:** click **Reset demo ↻** in the footer and confirm. This also clears stale data from earlier rehearsals. Then you are on **Your Oulu**.
