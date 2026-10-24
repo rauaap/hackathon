@@ -50,3 +50,40 @@ Browser artifacts are local and gitignored under `output/playwright/`. The code 
 - Browser checks passed: source-to-private-queue and duplicate prevention; RSS leads blocked from unrelated prepared survey draft; local observation labelled unverified; changed reader need invalidates approval and reviewed need appears on publication; persisted source lead; failed refresh + retry; Finnish controls.
 - Changed newsroom/offers views checked at 320/390/768/1440px with no horizontal overflow; Finnish live sources at390px. New newsroom loaded state had zero axe WCAG A/AA findings and no page exceptions. Screenshots inspected visually.
 - An intentional 502 during the failure test is expected; this is not a production outage claim. External sources can change or be unavailable; the app exposes that state and retains the deterministic demonstration.
+
+## eVaka main-story change (24 October 2026)
+
+- Main story and prepared draft switched from the spring 2024 survey to the City of Oulu eVaka notice published 14 October 2026. Raw HTML of the notice was fetched and each claim compared with the page text before use. The survey stays as labelled historical background in the source monitor.
+- `npm run build` passed. `npm test`: 4/4 passed on **Node 26.5** (Node 24 is not installed on this machine; not rerun on 24).
+- Playwright (Chromium, built app via `vite preview`), results in `output/playwright/evaka-2026-10-24/` (gitignored): reader lead and fictional persona label; main article known/unknown lists and unanswered follow-up in EN and FI; unrelated question cannot open the eVaka draft; seeded claim blocks approval/publication; supported replacement resets review; approval needs both fact and language review; editing invalidates approval; exact EN/FI snapshot published with question, selection reason and open follow-up; reviewed correction with visible note; reload keeps publication and correction; Reset demo clears and persists; question/error dialogs keep focus, close on Escape and restore focus; mocked `/api/sources` 502 shows retryable error while the prepared draft stays usable; no page-level horizontal overflow at 320/390/768/1440px in EN and FI (reader, article, newsroom with draft open); no page or console errors apart from the intentional 502.
+- axe-core 4.10.3 (WCAG 2 A/AA, 2.1 AA, 2.2 AA tags): zero violations in reader EN, main article EN/FI, blocked newsroom draft EN, published story FI and newsroom source-error state. Not a full accessibility audit.
+- Not rechecked in this pass: live RSS/Oulu API retrieval, offers view, 1024px and landscape, 200% text size, production deployment. Nothing was sent to the City of Oulu.
+
+## Kaleva RSS personalised feed (24 October 2026)
+
+- Inspected the live feed on 24 October 2026: HTTP 200, RSS 2.0, 25 items with `title`, `link` (utm parameters), `description`, `pubDate`, `guid` (`/linkki/<number>`) and `enclosure`. **No `<category>` elements and no article body.** Topics are therefore derived from headline + feed description and labelled as such. Images are not shown. No fallback feed was needed or added.
+- New `api/news.ts` (Vercel Function, local Vite middleware): 9 s timeout, 1 MiB bound, DOCTYPE/entity rejection, Kaleva-only HTTPS links, utm stripping, stable `kaleva-<number>` IDs, dedupe by ID/URL/title, 5-minute in-memory cache, last good copy served as `stale` for up to 24 h, otherwise 502 `no-store`. Browser keeps a localStorage copy for a labelled "saved copy" state.
+- `npm run build` passed. `npm test` 11/11 on Node 26.5 (7 new feed tests: normalisation, dedupe, entity rejection, explainable classification, different audience rankings, cache hit, stale fallback, 502). Upstream is mocked in unit tests.
+- Playwright against the built app with the **real feed** (`output/playwright/news-feed-2026-10-24/`, gitignored): 25 real items; every card links to kaleva.fi with timestamp and attribution; displayed headlines are exactly the feed titles; students and professionals/families feeds differ in both selection and order; "Latest" is chronological; the score shown equals the API score; the method disclosure is present; FI labels work; there is no page-level overflow at 320/390/768/1440 (EN+FI, both audiences, explanation open); the RSS story → queue → source brief path blocks unfinished notes, needs both reviews and publishes the exact approved text with the Kaleva source; the eVaka draft is restored unchanged afterwards. Mocked states: 502 with no copy (error + retry, eVaka unaffected), failed refresh after a load and server `stale` (labelled saved copy), no matching stories (explained empty state). axe: 0 violations in four new states. The eVaka regression script also passed 12/12 again.
+- Not verified: Vercel production behaviour of `/api/news`, multi-instance cache behaviour, keyword accuracy beyond the 25 inspected items, real reader usefulness of the weights.
+
+## Editorial AI assistant (24 October 2026)
+
+- Added `@anthropic-ai/sdk` 1.3.0 (the only new dependency) and `POST /api/news` in `api/news.ts`. The key is read from server environment only; `vite.config.ts` copies `ANTHROPIC_API_KEY` from `.env.local` into the server process. The built client bundle was searched: no SDK code, `x-api-key` or key variable name.
+- **No API credentials were available on this machine. No real Claude request was made, and output quality, latency and cost are unverified.** The SDK request shape (`betas`, `fallbacks: "default"`, `output_config.effort/format`) type-checks against SDK 1.3.0 types.
+- `npm test`: 21/21 on Node 26.5. 10 new assistant tests with a mocked model client:
+  - unavailable without credentials
+  - exact source text sent; URL and date taken from the feed
+  - missing description sent as `(none)` and invented descriptions flagged
+  - fidelity checks (numbers, `IS:` attribution, padding, advice)
+  - the draft cannot pass the approval gate as generated
+  - unknown or malformed IDs never reach the model
+  - result cache and in-flight merge
+  - hourly budget 429
+  - refusal, truncation, non-JSON, schema violations and client errors produce specific errors and are not cached
+  - no call when the feed is unreachable
+- Playwright (`output/playwright/ai-assist-2026-10-24/`), 8/8:
+  - **Real, unmocked:** with no key the desk shows "unavailable", the button is disabled, no POST is sent, the server returns 503 and the manual brief still works.
+  - **Mocked server response (labelled TEST FIXTURE):** budget, refusal and network errors are recoverable; the draft is saved unpublished and persists across reload without a new call; approval is blocked until notes are resolved; both reviews are required; an edit invalidates approval; the exact approved title and body are published; the reader sees the AI disclosure, original Kaleva headline and link; the feed card links to the explanation; a reader follow-up appears linked in the queue; no overflow at 320/390.
+  - axe: 0 violations in three new states.
+- Regression: the eVaka browser suite 12/12 and the RSS feed suite 11/11 pass again.

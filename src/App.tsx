@@ -8,14 +8,27 @@ import {
 } from "react";
 import {
   SOURCE,
+  SOURCE_PUBLISHED,
+  SOURCE_ACCESSED,
+  HISTORICAL_SOURCE,
+  PREPARED_QUESTION_ID,
   readerNeeds,
   type SourceLead,
   title,
   standfirst,
   background,
   interpretation,
+  knownClaims,
+  unknowns,
+  followUp,
   contexts,
   unsupported,
+  supportedReplacement,
+  draftInitial,
+  leadBrief,
+  aiDraft,
+  splitTitle,
+  PLACEHOLDER,
   scenarios,
   premium,
   briefingPreview,
@@ -29,7 +42,10 @@ import {
   type DemoState,
 } from "./data";
 
+import type { AssistDraft } from "../api/news.ts";
 import LiveSources from "./LiveSources";
+import NewsFeed from "./NewsFeed";
+import AssistantPanel from "./AssistantPanel";
 
 type View = "reader" | "offers" | "newsroom" | "notfound";
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
@@ -263,6 +279,15 @@ export default function App() {
   const [correctionLanguage, setCorrectionLanguage] = useState(false);
   const t = (en: string, fi: string) => (lang === "en" ? en : fi);
   const c = (copy: Copy) => copy[lang];
+  const formatDate = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString(
+      lang === "en" ? "en-GB" : "fi-FI",
+      {
+        day: "numeric",
+        month: lang === "en" ? "short" : "numeric",
+        year: "numeric",
+      },
+    );
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -326,6 +351,11 @@ export default function App() {
       body.toLowerCase().includes(s.toLowerCase()),
     ),
   );
+  const hasPlaceholders = PLACEHOLDER.test(state.draft.en + state.draft.fi);
+  const draftLead = state.questions.find(
+    (q) => q.id === state.draftFor,
+  )?.source;
+  const selectedQuestion = state.questions.find((q) => q.id === state.selected);
   const validApproval =
     !!state.approval &&
     state.approval.revision === state.revision &&
@@ -334,7 +364,67 @@ export default function App() {
     state.fact &&
     state.language &&
     !hasUnsupported &&
+    !hasPlaceholders &&
     !state.rejected;
+  // Tallentaa avustajan tuloksen luonnokseksi; hyväksynnät nollataan ja julkaisu vaatii ihmistarkistuksen.
+  function applyAiDraft(questionId: string, d: AssistDraft, cached: boolean) {
+    setState((s) =>
+      s.draftFor === questionId
+        ? {
+            ...s,
+            ai: { ...s.ai, [questionId]: d },
+            draft: aiDraft(d),
+            revision: s.revision + 1,
+            approval: null,
+            fact: false,
+            language: false,
+            rejected: false,
+          }
+        : {
+            ...s,
+            ai: { ...s.ai, [questionId]: d },
+            drafts: { ...s.drafts, [questionId]: aiDraft(d) },
+          },
+    );
+    setToast(
+      cached
+        ? t(
+            "AI draft loaded from the server cache and saved as an unpublished draft.",
+            "AI-luonnos ladattiin palvelimen välimuistista ja tallennettiin julkaisemattomana luonnoksena.",
+          )
+        : t(
+            "AI draft saved. It is not published; both human reviews are required.",
+            "AI-luonnos tallennettu. Sitä ei ole julkaistu; molemmat ihmistarkistukset vaaditaan.",
+          ),
+    );
+  }
+  // Vaihtaa työpöydälle valitun kysymyksen luonnoksen. Saman kysymyksen luonnos ei muutu.
+  function openDraft(id: string) {
+    setState((s) => {
+      if (s.draftFor === id) return s;
+      const lead = s.questions.find((q) => q.id === id)?.source;
+      const drafts = { ...s.drafts, [s.draftFor]: s.draft };
+      const next =
+        drafts[id] ??
+        (id === PREPARED_QUESTION_ID
+          ? { ...draftInitial }
+          : lead
+            ? leadBrief(lead)
+            : null);
+      if (!next) return s;
+      return {
+        ...s,
+        drafts,
+        draftFor: id,
+        draft: next,
+        revision: s.revision + 1,
+        approval: null,
+        fact: false,
+        language: false,
+        rejected: false,
+      };
+    });
+  }
   function editDraft(l: Lang, value: string) {
     setState((s) => ({
       ...s,
@@ -365,6 +455,8 @@ export default function App() {
             data.get("contribution") === "observation"
               ? "observation"
               : "question",
+          // Jatkokysymys luetusta jutusta kytketään juttuun.
+          ...(story ? { storyId: story === "main" ? "main" : story.id } : {}),
         },
       ],
     }));
@@ -408,25 +500,59 @@ export default function App() {
   function publish() {
     if (!validApproval || !state.approval) return;
     const body = { ...state.approval.body };
-    setState((s) => ({
-      ...s,
-      stories: [
-        {
-          id: crypto.randomUUID(),
-          title: { ...title },
-          body,
-          kind: "published",
-          category: { en: "Community explained", fi: "Yhteisö kysyi" },
-          group: "everyone",
-          corrections: [],
-          review: "Alex North — fictional demo editor",
-          readerNeed: s.readerNeed,
-        },
-        ...s.stories,
-      ],
-      approval: null,
-      rejected: true,
-    }));
+    setState((s) => {
+      const question = s.questions.find((q) => q.id === s.draftFor);
+      const lead = question?.source;
+      const ai = s.ai[s.draftFor];
+      // AI-luonnoksessa otsikko on hyväksytyn version ensimmäinen rivi.
+      const en = splitTitle(body.en);
+      const fi = splitTitle(body.fi);
+      return {
+        ...s,
+        stories: [
+          {
+            id: crypto.randomUUID(),
+            title: ai
+              ? { en: en.title, fi: fi.title }
+              : lead
+                ? { en: `From Kaleva: ${lead.title}`, fi: lead.title }
+                : { ...title },
+            body: ai ? { en: en.body, fi: fi.body } : body,
+            kind: "published",
+            category: ai
+              ? {
+                  en: "Kaleva story explained",
+                  fi: "Kalevan juttu selitettynä",
+                }
+              : lead
+                ? {
+                    en: "Kaleva lead · reviewed",
+                    fi: "Kaleva-vihje · tarkistettu",
+                  }
+                : { en: "Community explained", fi: "Yhteisö kysyi" },
+            ...(ai
+              ? {
+                  ai: {
+                    model: ai.model,
+                    generatedAt: ai.generatedAt,
+                    promptVersion: ai.promptVersion,
+                  },
+                }
+              : {}),
+            group: "everyone",
+            corrections: [],
+            review: "Alex North — fictional demo editor",
+            readerNeed: s.readerNeed,
+            question: question?.text,
+            reason: s.reason.trim(),
+            ...(lead ? { sourceLead: lead } : { followUp: { ...followUp } }),
+          },
+          ...s.stories,
+        ],
+        approval: null,
+        rejected: true,
+      };
+    });
     setToast(
       t(
         "The exact reviewed version is now in the reader feed.",
@@ -586,6 +712,8 @@ export default function App() {
           category: { en: "Local life", fi: "Paikallinen elämä" },
           group: "everyone",
           corrections: state.mainCorrections,
+          question: state.questions.find((q) => q.id === PREPARED_QUESTION_ID)
+            ?.text,
         }
       : state.stories.find((s) => s.id === (story as Story)?.id) ||
         (story as Story);
@@ -598,12 +726,24 @@ export default function App() {
         <div className="article-kicker">
           {main
             ? t(
-                "LOCAL LIFE · BACKGROUND EXPLAINER",
-                "PAIKALLINEN ELÄMÄ · TAUSTAJUTTU",
+                "FAMILIES · SERVICE CHANGE EXPLAINER",
+                "PERHEET · PALVELUMUUTOKSEN SELITYS",
               )
             : c(item.category)}
         </div>
         <h1>{main ? c(title) : c(item.title)}</h1>
+        {item.ai && item.sourceLead && (
+          <p className="ai-disclosure">
+            <span className="badge">
+              {t(
+                "AI-assisted translation · human-approved",
+                "AI-avusteinen käännös · ihmisen hyväksymä",
+              )}
+            </span>{" "}
+            {t("Original Kaleva headline: ", "Kalevan alkuperäinen otsikko: ")}
+            <span lang="fi">{item.sourceLead.title}</span>
+          </p>
+        )}
         {item.readerNeed && (
           <p className="eyebrow">
             {readerNeeds.find((need) => need.id === item.readerNeed)?.[lang]}
@@ -634,8 +774,8 @@ export default function App() {
             <span>
               {main
                 ? t(
-                    "2024 background · prepared 23 Oct 2026",
-                    "Tausta vuodelta 2024 · koottu 23.10.2026",
+                    "City of Oulu notice, 14 Oct 2026 · prepared 24 Oct 2026",
+                    "Oulun kaupungin tiedote 14.10.2026 · koottu 24.10.2026",
                   )
                 : t("Demonstration content", "Demon sisältö")}
             </span>
@@ -657,11 +797,31 @@ export default function App() {
         {main && <CityArt />}
         <div className="article-layout">
           <div className="article-body">
+            {item.question && (
+              <section className="context-box">
+                <span className="eyebrow">
+                  {t(
+                    "THE READER QUESTION WE CHOSE",
+                    "VALITSEMAMME LUKIJAN KYSYMYS",
+                  )}
+                </span>
+                <p>{c(item.question)}</p>
+                {item.reason && (
+                  <small>
+                    {t(
+                      "Editor’s selection reason (original language): ",
+                      "Toimittajan valintaperuste (alkuperäinen kieli): ",
+                    )}
+                    {item.reason}
+                  </small>
+                )}
+              </section>
+            )}
             <h2>{t("What happened", "Mitä tapahtui")}</h2>
             <p className="preserve">
               {main ? c(state.mainBody) : c(item.body)}
             </p>
-            {(main || item.kind === "published") && (
+            {(main || item.kind === "published") && !item.sourceLead && (
               <>
                 <h2>
                   {t("Why it matters in Oulu", "Miksi tämä koskee Oulua")}
@@ -681,20 +841,34 @@ export default function App() {
                 </h2>
                 <p>
                   <strong>
-                    {t("Verified background: ", "Vahvistettu tausta: ")}
+                    {t(
+                      "Stated in the city’s notice:",
+                      "Kaupungin tiedotteessa todetaan:",
+                    )}
                   </strong>
-                  {t(
-                    "The official report describes a spring 2024 survey. It is dated evidence, not a new 2026 development.",
-                    "Virallinen raportti kuvaa kevään 2024 kyselyä. Se on historiallista taustatietoa, ei uusi tapahtuma vuodelta 2026.",
-                  )}
                 </p>
+                <ul className="known-list">
+                  {knownClaims.map((claim) => (
+                    <li key={claim.en}>{c(claim)}</li>
+                  ))}
+                </ul>
                 <p>
                   <strong>
-                    {t("Still unverified: ", "Vielä selvittämättä: ")}
+                    {t(
+                      "What we don’t know yet (not in the notice):",
+                      "Mitä ei vielä tiedetä (ei tiedotteessa):",
+                    )}
                   </strong>
+                </p>
+                <ul className="known-list">
+                  {unknowns.map((gap) => (
+                    <li key={gap.en}>{c(gap)}</li>
+                  ))}
+                </ul>
+                <p>
                   {t(
-                    "Whether these experiences persist today, how needs differ between reader groups, and whether readers or employers would pay. No original interviews have been conducted for this concept.",
-                    "Jatkuvatko kokemukset tänään, miten eri lukijaryhmien tarpeet eroavat ja maksaisivatko lukijat tai työnantajat palvelusta. Konseptia varten ei ole tehty haastatteluja.",
+                    "We have not interviewed the city or users. Nothing above is an answer from the City of Oulu.",
+                    "Emme ole haastatelleet kaupunkia tai käyttäjiä. Mikään yllä oleva ei ole Oulun kaupungin vastaus.",
                   )}
                 </p>
                 <h2>
@@ -702,10 +876,28 @@ export default function App() {
                 </h2>
                 <p>
                   {t(
-                    "Open the original report below. For a personal service question, use current guidance from the responsible organisation. Ask us which local issue needs an independent explanation.",
-                    "Avaa alkuperäinen raportti alta. Henkilökohtaista palveluasiaa varten tarkista vastuullisen tahon ajantasainen ohje. Kerro meille, mikä paikallinen asia kaipaa riippumatonta selitystä.",
+                    "Open the city’s notice below for its full setup steps. This explainer does not replace the city’s own eVaka guidance. Ask us what still needs an independent explanation.",
+                    "Avaa kaupungin tiedote alta, siinä ovat koko käyttöönotto-ohjeet. Tämä juttu ei korvaa kaupungin omaa eVaka-ohjeistusta. Kerro meille, mikä kaipaa vielä riippumatonta selitystä.",
                   )}
                 </p>
+                <section className="context-box follow-up">
+                  <span className="eyebrow">
+                    {t(
+                      "OPEN FOLLOW-UP QUESTION · CITY OF OULU",
+                      "AVOIN JATKOKYSYMYS · OULUN KAUPUNKI",
+                    )}
+                  </span>
+                  <p>{c(item.followUp || followUp)}</p>
+                  <span className="badge">
+                    {t("Not yet answered", "Ei vielä vastattu")}
+                  </span>
+                  <small>
+                    {t(
+                      "Demo: this question has not been sent to the city. No answer is shown until one is received and checked.",
+                      "Demo: kysymystä ei ole lähetetty kaupungille. Vastausta ei näytetä ennen kuin se on saatu ja tarkistettu.",
+                    )}
+                  </small>
+                </section>
               </>
             )}
             {notes.length > 0 && (
@@ -722,6 +914,24 @@ export default function App() {
                   </div>
                 ))}
               </section>
+            )}
+            {item.kind === "published" && (
+              <p className="privacy-note">
+                {(() => {
+                  const n = state.questions.filter(
+                    (q) => q.storyId === item.id,
+                  ).length;
+                  return n
+                    ? t(
+                        `${n} reader question${n > 1 ? "s" : ""} about this story ${n > 1 ? "are" : "is"} waiting in the private newsroom queue.`,
+                        `${n} lukijan kysymys${n > 1 ? "tä" : ""} tästä jutusta odottaa yksityisessä toimitusjonossa.`,
+                      )
+                    : t(
+                        "Something still unclear? Ask the newsroom to explain more.",
+                        "Jäikö jotain epäselväksi? Pyydä toimitusta selittämään lisää.",
+                      );
+                })()}
+              </p>
             )}
             <div className="article-actions">
               <button className="primary" onClick={() => setModal("question")}>
@@ -746,18 +956,48 @@ export default function App() {
             <div className="source-box">
               <Icon name="shield" />
               <h3>{t("Behind this story", "Jutun taustalla")}</h3>
-              {main || item.kind === "published" ? (
+              {item.sourceLead ? (
+                <>
+                  <span className="eyebrow">
+                    {t("ORIGINAL SOURCE", "ALKUPERÄINEN LÄHDE")}
+                  </span>
+                  <a
+                    lang="fi"
+                    href={item.sourceLead.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Kaleva: {item.sourceLead.title}{" "}
+                    <Icon name="external" size={14} />
+                  </a>
+                  <p>
+                    {item.sourceLead.publishedAt
+                      ? `${t("Published", "Julkaistu")} ${new Date(item.sourceLead.publishedAt).toLocaleString(lang === "en" ? "en-GB" : "fi-FI", { timeZone: "Europe/Helsinki" })}. `
+                      : ""}
+                    {t(
+                      "Found through Kaleva’s free-news RSS. The original article is Kaleva’s; this brief was written and reviewed in this local demo.",
+                      "Löytyi Kalevan maksuttomien uutisten RSS-syötteestä. Alkuperäinen juttu on Kalevan; tämä tiivistys kirjoitettiin ja tarkistettiin tässä paikallisessa demossa.",
+                    )}
+                  </p>
+                </>
+              ) : main || item.kind === "published" ? (
                 <>
                   <span className="eyebrow">
                     {t("ORIGINAL SOURCE", "ALKUPERÄINEN LÄHDE")}
                   </span>
                   <a href={SOURCE} target="_blank" rel="noreferrer">
-                    International House Oulu <Icon name="external" size={14} />
+                    {t(
+                      "City of Oulu: eVaka notice",
+                      "Oulun kaupunki: eVaka-tiedote",
+                    )}{" "}
+                    <Icon name="external" size={14} />
                   </a>
                   <p>
+                    {t("Published", "Julkaistu")} {formatDate(SOURCE_PUBLISHED)}{" "}
+                    · {t("accessed", "luettu")} {formatDate(SOURCE_ACCESSED)}.{" "}
                     {t(
-                      "Multilingual survey results. Survey: spring 2024. Publication date not shown on source page. Accessed 23 Oct 2026.",
-                      "Monikielisen kyselyn tulokset. Kysely: kevät 2024. Julkaisupäivä ei näy lähdesivulla. Luettu 23.10.2026.",
+                      "English-language notice; the Finnish text of this explainer is our translation.",
+                      "Englanninkielinen tiedote; tämän jutun suomenkielinen teksti on käännöksemme.",
                     )}
                   </p>
                 </>
@@ -772,10 +1012,23 @@ export default function App() {
               <hr />
               <strong>{t("AI assistance", "AI-avustus")}</strong>
               <p>
-                {t(
-                  "Prepared fixtures simulate source selection, drafting and translation. No live AI reporting or autonomous publishing.",
-                  "Valmiit esimerkit simuloivat lähdevalintaa, luonnostelua ja käännöstä. Ei reaaliaikaista AI-uutisointia tai automaattista julkaisua.",
-                )}
+                {item.ai
+                  ? `${t(
+                      `Claude (${item.ai.model}) translated Kaleva’s headline and feed description into English and drafted the relevance note on`,
+                      `Claude (${item.ai.model}) käänsi Kalevan otsikon ja syötekuvauksen englanniksi ja luonnosteli merkitysarvion`,
+                    )} ${new Date(item.ai.generatedAt).toLocaleDateString(lang === "en" ? "en-GB" : "fi-FI", { timeZone: "Europe/Helsinki" })}. ${t(
+                      "The model did not read the full article. A human editor checked the facts and both languages and approved this exact version.",
+                      "Malli ei lukenut koko juttua. Ihmistoimittaja tarkisti faktat ja molemmat kieliversiot ja hyväksyi tämän täsmällisen version.",
+                    )}`
+                  : item.sourceLead
+                    ? t(
+                        "No AI was used for this brief. It was written and reviewed by hand.",
+                        "Tähän tiivistykseen ei käytetty tekoälyä. Se kirjoitettiin ja tarkistettiin käsin.",
+                      )
+                    : t(
+                        "Prepared fixtures simulate source selection, drafting and translation. No live AI reporting or autonomous publishing.",
+                        "Valmiit esimerkit simuloivat lähdevalintaa, luonnostelua ja käännöstä. Ei reaaliaikaista AI-uutisointia tai automaattista julkaisua.",
+                      )}
               </p>
               <strong>
                 {t("Editorial review", "Toimituksellinen tarkistus")}
@@ -973,8 +1226,8 @@ export default function App() {
                       {t("Local life", "Paikallinen elämä")}
                       <span className="category-divider" />
                       {t(
-                        "2024 survey background",
-                        "Vuoden 2024 kyselyn taustaa",
+                        "City notice · 14 Oct 2026",
+                        "Kaupungin tiedote · 14.10.2026",
                       )}
                     </div>
                     <h2>{c(title)}</h2>
@@ -1028,6 +1281,8 @@ export default function App() {
                         "ILLUSTRATIVE READER QUESTION",
                         "HAVAINNOLLISTAVA LUKIJAKYSYMYS",
                       )}
+                      {state.questions[0].persona &&
+                        ` · ${c(state.questions[0].persona).toUpperCase()}`}
                     </span>
                     <h3>{c(state.questions[0].text)}</h3>
                     <button
@@ -1107,6 +1362,25 @@ export default function App() {
                 </div>
               </aside>
             </div>
+            <NewsFeed
+              lang={lang}
+              group={group}
+              onGroup={setGroup}
+              onQueue={queueSource}
+              onOpenNewsroom={() => navigate("newsroom")}
+              explained={Object.fromEntries(
+                state.stories.flatMap((x) =>
+                  x.sourceLead ? [[x.sourceLead.url, x.id]] : [],
+                ),
+              )}
+              onRead={(id) => {
+                const found = state.stories.find((x) => x.id === id);
+                if (found) showStory(found);
+              }}
+              queuedUrls={state.questions.flatMap((q) =>
+                q.source ? [q.source.url] : [],
+              )}
+            />
             {state.stories.length > 0 && (
               <section className="published-section">
                 <div className="section-title">
@@ -1660,6 +1934,7 @@ export default function App() {
                           "YKSITYINEN · KÄYTTÄJÄN ALKUPERÄINEN KIELI",
                         )
                       : t("ILLUSTRATIVE QUESTION", "HAVAINNOLLISTAVA KYSYMYS")}
+                    {q.persona && ` · ${c(q.persona).toUpperCase()}`}
                   </span>
                   <h3>{c(q.text)}</h3>
                   {q.kind === "observation" && (
@@ -1670,6 +1945,20 @@ export default function App() {
                       )}
                     </span>
                   )}
+                  {q.storyId && (
+                    <p className="source-lead">
+                      {t("Follow-up to: ", "Jatkokysymys jutusta: ")}
+                      {c(
+                        q.storyId === "main"
+                          ? title
+                          : (state.stories.find((x) => x.id === q.storyId)
+                              ?.title ?? {
+                              en: "a story no longer in this demo",
+                              fi: "juttu, jota ei enää ole demossa",
+                            }),
+                      )}
+                    </p>
+                  )}
                   {q.source && (
                     <p className="source-lead">
                       <a href={q.source.url} target="_blank" rel="noreferrer">
@@ -1677,8 +1966,8 @@ export default function App() {
                       </a>
                       <br />
                       {t(
-                        "Unreported lead. A new source-based draft is required; the prepared survey draft cannot answer this item.",
-                        "Selvittämätön vihje. Tarvitaan uusi lähteisiin perustuva juttu; valmis kyselyluonnos ei vastaa tähän aiheeseen.",
+                        "Unreported lead. A new source-based draft is required; the prepared eVaka draft cannot answer this item.",
+                        "Selvittämätön vihje. Tarvitaan uusi lähteisiin perustuva juttu; valmis eVaka-luonnos ei vastaa tähän aiheeseen.",
                       )}
                     </p>
                   )}
@@ -1723,24 +2012,28 @@ export default function App() {
               </div>
               <span className="eyebrow">
                 {t(
-                  "OFFICIAL BACKGROUND · NOT BREAKING NEWS",
-                  "VIRALLINEN TAUSTA · EI TUORE UUTINEN",
+                  "OFFICIAL SOURCE · DATED SERVICE CHANGE",
+                  "VIRALLINEN LÄHDE · PÄIVÄTTY PALVELUMUUTOS",
                 )}
               </span>
-              <h3>International House Oulu</h3>
+              <h3>
+                {t(
+                  "City of Oulu: eVaka notice",
+                  "Oulun kaupunki: eVaka-tiedote",
+                )}
+              </h3>
               <p>{c(background)}</p>
               <a href={SOURCE} target="_blank" rel="noreferrer">
-                {t("Inspect original report", "Tarkista alkuperäinen raportti")}{" "}
+                {t("Inspect original notice", "Tarkista alkuperäinen tiedote")}{" "}
                 <Icon name="external" size={14} />
               </a>
               <small>
-                {t(
-                  "Survey: spring 2024 · accessed 23 Oct 2026. No publication date displayed.",
-                  "Kysely: kevät 2024 · luettu 23.10.2026. Julkaisupäivää ei ilmoiteta.",
-                )}
+                {t("Published", "Julkaistu")} {formatDate(SOURCE_PUBLISHED)} ·{" "}
+                {t("accessed", "luettu")} {formatDate(SOURCE_ACCESSED)}
               </small>
-              <blockquote lang="fi">
-                “Kyselyyn vastasi yhteensä 448 henkilöä”
+              <blockquote lang="en">
+                “On iPhone, notifications work only when eVaka is opened from
+                the home screen icon.”
               </blockquote>
               <small>
                 {t(
@@ -1748,6 +2041,19 @@ export default function App() {
                   "Lyhyt lähdeote alkuperäisellä kielellä.",
                 )}
               </small>
+              <p className="privacy-note">
+                {t(
+                  "Historical background only, not evidence for this story: ",
+                  "Vain historiallista taustaa, ei tämän jutun todiste: ",
+                )}
+                <a href={HISTORICAL_SOURCE} target="_blank" rel="noreferrer">
+                  {t(
+                    "International House Oulu survey, spring 2024",
+                    "International House Oulun kysely, kevät 2024",
+                  )}{" "}
+                  ↗
+                </a>
+              </p>
               <hr />
               <h3>{t("Relevance editor", "Aihevalinta")}</h3>
               <label>
@@ -1814,22 +2120,38 @@ export default function App() {
                   )}
                 />
               </label>
-              <p className="privacy-note">
-                {t(
-                  "The prepared draft covers information access only. Unrelated questions need new reporting; this fixture cannot answer them.",
-                  "Valmis luonnos käsittelee vain tiedon saatavuutta. Muut kysymykset vaativat uutta tiedonhankintaa; tämä esimerkki ei vastaa niihin.",
-                )}
+              <p className="privacy-note" id="prepared-draft-scope">
+                {selectedQuestion?.source
+                  ? t(
+                      "Source lead: opens a brief built only from Kaleva’s headline, date and feed description. The editor must read the full article and replace every [EDITOR] note before review.",
+                      "Lähdevihje: avaa pohjan, jossa on vain Kalevan otsikko, päiväys ja syötteen kuvaus. Toimittajan pitää lukea koko juttu ja korvata jokainen [TOIMITTAJA]-kohta ennen tarkistusta.",
+                    )
+                  : state.selected && state.selected !== PREPARED_QUESTION_ID
+                    ? t(
+                        "This question needs new reporting. The prepared draft answers only the eVaka notification question.",
+                        "Tämä kysymys vaatii uutta tiedonhankintaa. Valmis luonnos vastaa vain eVaka-ilmoituksia koskevaan kysymykseen.",
+                      )
+                    : t(
+                        "The prepared draft answers only the eVaka notification question, using the city’s notice. Other questions need new reporting.",
+                        "Valmis luonnos vastaa vain eVaka-ilmoituksia koskevaan kysymykseen kaupungin tiedotteen pohjalta. Muut kysymykset vaativat uutta tiedonhankintaa.",
+                      )}
               </p>
               <button
                 className="primary"
+                aria-describedby="prepared-draft-scope"
                 disabled={
-                  !state.selected ||
-                  state.reason.trim().length < 10 ||
-                  !!state.questions.find((q) => q.id === state.selected)?.source
+                  (state.selected !== PREPARED_QUESTION_ID &&
+                    !selectedQuestion?.source) ||
+                  state.reason.trim().length < 10
                 }
-                onClick={() => setDraftOpen(true)}
+                onClick={() => {
+                  openDraft(state.selected);
+                  setDraftOpen(true);
+                }}
               >
-                {t("Open prepared draft", "Avaa valmis luonnos")}{" "}
+                {selectedQuestion?.source
+                  ? t("Open source brief", "Avaa lähdepohja")
+                  : t("Open prepared draft", "Avaa valmis luonnos")}{" "}
                 <Icon name="arrow" />
               </button>
             </section>
@@ -1839,10 +2161,20 @@ export default function App() {
               <div className="panel-heading">
                 <div>
                   <span className="eyebrow">
-                    {t(
-                      "SIMULATED DRAFT · HUMAN DECISION",
-                      "SIMULOITU LUONNOS · IHMISEN PÄÄTÖS",
-                    )}
+                    {state.ai[state.draftFor]
+                      ? t(
+                          "AI-ASSISTED DRAFT · HUMAN DECISION",
+                          "AI-AVUSTEINEN LUONNOS · IHMISEN PÄÄTÖS",
+                        )
+                      : draftLead
+                        ? t(
+                            "SOURCE BRIEF · HUMAN DECISION",
+                            "LÄHDEPOHJA · IHMISEN PÄÄTÖS",
+                          )
+                        : t(
+                            "SIMULATED DRAFT · HUMAN DECISION",
+                            "SIMULOITU LUONNOS · IHMISEN PÄÄTÖS",
+                          )}
                   </span>
                   <h2>{t("The editor’s desk", "Toimittajan työpöytä")}</h2>
                 </div>
@@ -1858,59 +2190,129 @@ export default function App() {
                   "Tarkistaja: Alex North — kuvitteellinen demotoimittaja. Paikallinen hyväksyntä ei ole Kalevan journalistin hyväksyntä.",
                 )}
               </p>
-              <div className="claim-list">
-                <div>
-                  <Icon name="check" />
-                  <span>
-                    {t(
-                      "448 respondents; spring 2024",
-                      "448 vastaajaa; kevät 2024",
-                    )}
-                  </span>
-                  <a href={SOURCE} target="_blank" rel="noreferrer">
-                    {t("Report: respondents", "Raportti: vastaajat")} ↗
-                  </a>
+              {draftLead && (
+                <AssistantPanel
+                  key={state.draftFor}
+                  lang={lang}
+                  lead={draftLead}
+                  existing={state.ai[state.draftFor]}
+                  onDraft={(d, cached) =>
+                    applyAiDraft(state.draftFor, d, cached)
+                  }
+                />
+              )}
+              {draftLead ? (
+                <div className="claim-list">
+                  <div>
+                    <Icon name="check" />
+                    <span lang="fi">{draftLead.title}</span>
+                    <a href={draftLead.url} target="_blank" rel="noreferrer">
+                      {t("Kaleva article", "Kalevan juttu")} ↗
+                    </a>
+                  </div>
+                  <div>
+                    <Icon name="check" />
+                    <span>
+                      {t(
+                        "Feed date and description",
+                        "Syötteen päiväys ja kuvaus",
+                      )}
+                      {draftLead.description
+                        ? ""
+                        : t(" (no description)", " (ei kuvausta)")}
+                    </span>
+                    <b>{t("FROM RSS", "RSS-SYÖTTEESTÄ")}</b>
+                  </div>
+                  {state.ai[state.draftFor] && (
+                    <div className="unknown">
+                      <strong>AI</strong>
+                      <span>
+                        {t(
+                          "English headline, description and relevance note: machine-generated from the feed text only. Compare with the Finnish source.",
+                          "Englanninkielinen otsikko, kuvaus ja merkitysarvio: kone tuottanut pelkästä syötetekstistä. Vertaa suomenkieliseen lähteeseen.",
+                        )}
+                      </span>
+                      <b>
+                        {t("NEEDS HUMAN REVIEW", "VAATII IHMISTARKISTUKSEN")}
+                      </b>
+                    </div>
+                  )}
+                  <div className="unknown">
+                    <strong>?</strong>
+                    <span>
+                      {t(
+                        "Full article content: not read by this system. The editor must open and read it.",
+                        "Jutun koko sisältö: järjestelmä ei lue sitä. Toimittajan pitää avata ja lukea se.",
+                      )}
+                    </span>
+                    <b>{t("NOT IN FEED", "EI SYÖTTEESSÄ")}</b>
+                  </div>
+                  <div className={hasPlaceholders ? "unsupported" : "resolved"}>
+                    <strong>{hasPlaceholders ? "!" : "✓"}</strong>
+                    <span>
+                      {t(
+                        "Editor notes in the draft",
+                        "Toimittajan merkinnät luonnoksessa",
+                      )}
+                    </span>
+                    <b>
+                      {hasPlaceholders
+                        ? t(
+                            "UNFINISHED · BLOCKS PUBLICATION",
+                            "KESKEN · ESTÄÄ JULKAISUN",
+                          )
+                        : t("REPLACED", "KORVATTU")}
+                    </b>
+                  </div>
                 </div>
-                <div>
-                  <Icon name="check" />
-                  <span>
-                    {t(
-                      "26%: information barrier",
-                      "26 %: tiedon saatavuuden este",
-                    )}
-                  </span>
-                  <a href={SOURCE} target="_blank" rel="noreferrer">
-                    {t(
-                      "Report: integration barriers",
-                      "Raportti: kotoutumisen esteet",
-                    )}{" "}
-                    ↗
-                  </a>
+              ) : (
+                <div className="claim-list">
+                  {knownClaims.map((claim) => (
+                    <div key={claim.en}>
+                      <Icon name="check" />
+                      <span>{c(claim)}</span>
+                      <a href={SOURCE} target="_blank" rel="noreferrer">
+                        {t("City notice", "Tiedote")} ↗
+                      </a>
+                    </div>
+                  ))}
+                  {unknowns.map((gap) => (
+                    <div key={gap.en} className="unknown">
+                      <strong>?</strong>
+                      <span>{c(gap)}</span>
+                      <b>{t("NOT IN SOURCE", "EI LÄHTEESSÄ")}</b>
+                    </div>
+                  ))}
+                  <div className={hasUnsupported ? "unsupported" : "resolved"}>
+                    <strong>{hasUnsupported ? "!" : "✓"}</strong>
+                    <span>“{c(unsupported)}”</span>
+                    <b>
+                      {hasUnsupported
+                        ? t(
+                            "UNSUPPORTED · BLOCKS PUBLICATION",
+                            "EI LÄHDETUKEA · ESTÄÄ JULKAISUN",
+                          )
+                        : t("REMOVED / CORRECTED", "POISTETTU / KORJATTU")}
+                    </b>
+                  </div>
                 </div>
-                <div className={hasUnsupported ? "unsupported" : "resolved"}>
-                  <strong>{hasUnsupported ? "!" : "✓"}</strong>
-                  <span>
+              )}
+              {hasPlaceholders && (
+                <div className="warning-box">
+                  <p>
                     {t(
-                      "“All international residents have this problem.”",
-                      "”Kaikilla kansainvälisillä asukkailla on tämä ongelma.”",
+                      "Replace every [EDITOR] note in English and every [TOIMITTAJA] note in Finnish with text you have checked against the full article. Unfinished notes block approval and publication.",
+                      "Korvaa jokainen englanninkielinen [EDITOR]- ja suomenkielinen [TOIMITTAJA]-merkintä tekstillä, jonka olet tarkistanut koko jutusta. Keskeneräiset merkinnät estävät hyväksynnän ja julkaisun.",
                     )}
-                  </span>
-                  <b>
-                    {hasUnsupported
-                      ? t(
-                          "UNSUPPORTED · BLOCKS PUBLICATION",
-                          "EI LÄHDETUKEA · ESTÄÄ JULKAISUN",
-                        )
-                      : t("REMOVED / CORRECTED", "POISTETTU / KORJATTU")}
-                  </b>
+                  </p>
                 </div>
-              </div>
+              )}
               {hasUnsupported && (
                 <div className="warning-box">
                   <p>
                     {t(
-                      "A survey cannot establish a universal claim. Remove the seeded assertion in both languages or use the supported replacement. All other edits still require factual review.",
-                      "Kysely ei tue kaikkia koskevaa väitettä. Poista väite molemmista kieliversioista tai käytä lähteen mukaista korvausta. Muutkin muokkaukset vaativat faktantarkistuksen.",
+                      "The notice contradicts this: it names Android and iOS, recommends Chrome on Android and limits iPhone notifications to the home screen icon. Remove the seeded assertion in both languages or use the supported replacement. All other edits still require factual review.",
+                      "Tiedote on ristiriidassa väitteen kanssa: se mainitsee Androidin ja iOS:n, suosittelee Androidilla Chromea ja rajaa iPhonen ilmoitukset aloitusnäytön kuvakkeeseen. Poista väite molemmista kieliversioista tai käytä lähteen mukaista korvausta. Muutkin muokkaukset vaativat faktantarkistuksen.",
                     )}
                   </p>
                   <button
@@ -1921,11 +2323,11 @@ export default function App() {
                         draft: {
                           en: s.draft.en.replace(
                             unsupported.en,
-                            "The report describes respondents’ experiences; it cannot represent everyone.",
+                            supportedReplacement.en,
                           ),
                           fi: s.draft.fi.replace(
                             unsupported.fi,
-                            "Raportti kuvaa vastaajien kokemuksia eikä edusta kaikkia.",
+                            supportedReplacement.fi,
                           ),
                         },
                         revision: s.revision + 1,
@@ -2022,6 +2424,7 @@ export default function App() {
                       !state.fact ||
                       !state.language ||
                       hasUnsupported ||
+                      hasPlaceholders ||
                       state.rejected ||
                       !state.draft.en.trim() ||
                       !state.draft.fi.trim()
