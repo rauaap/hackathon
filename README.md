@@ -41,17 +41,20 @@ For a Kaleva RSS story that has been put in the newsroom queue, the source brief
 
 The URL and date come from the feed, not the model. Deterministic fidelity checks flag new numbers, dropped attributions (`IS:`), padding and advice phrasing. Each warning becomes an `[EDITOR: …]` note, which blocks approval until a person resolves it. The result is stored as an unpublished draft. Publication still requires the existing factual and language reviews of the exact version. The reader sees the approved English text, the original Kaleva headline and link, and an AI-assistance disclosure. Readers can ask a follow-up, which is linked to the story in the newsroom queue.
 
+The model call runs on a separate server with the Claude Agent SDK (`agent-server/`). Vercel only forwards the prompt and schema there with a shared secret over HTTPS, so the Vercel project needs no Anthropic API key.
+
 Configuration (server only; never prefix with `VITE_`):
 
 ```sh
 # .env.local (gitignored) for local dev/preview, or Vercel project environment variables
-ANTHROPIC_API_KEY=...
+AGENT_BACKEND_URL=https://178-62-229-130.sslip.io   # Agent SDK backend (agent-server/)
+AGENT_BACKEND_SECRET=...          # shared secret, same value as in agent-server/.env
 NEWSROOM_ACCESS_CODE=...          # required, at least 24 characters; editors enter it in the newsroom
 ASSISTANT_MAX_CALLS_PER_HOUR=20   # optional, default 20 per server instance
 ASSISTANT_MAX_CALLS_PER_DAY=60    # optional, default 60 per server instance
 ```
 
-**Access control.** The generation endpoint fails closed. Without both a key and an access code of at least 24 characters, `GET /api/news` reports `assistant.available: false` with a `reason`, `POST` returns 503 and the desk shows a labelled “unavailable” state. Nothing is generated or simulated. Each `POST` must send `Authorization: Bearer <NEWSROOM_ACCESS_CODE>`, which is compared in constant time. A wrong or missing code returns 401 before any feed or model work. Ten failures within 10 minutes lock the endpoint (429) for that server instance. The editor types the code in the assistant panel, and it is kept in `sessionStorage` for that tab only.
+**Access control.** The generation endpoint fails closed. Without both the agent backend settings and an access code of at least 24 characters, `GET /api/news` reports `assistant.available: false` with a `reason`, `POST` returns 503 and the desk shows a labelled “unavailable” state. Nothing is generated or simulated. Each `POST` must send `Authorization: Bearer <NEWSROOM_ACCESS_CODE>`, which is compared in constant time. A wrong or missing code returns 401 before any feed or model work. Ten failures within 10 minutes lock the endpoint (429) for that server instance. The editor types the code in the assistant panel, and it is kept in `sessionStorage` for that tab only.
 
 **Cost controls.**
 - Only items currently in Kaleva's feed can be processed.
@@ -71,12 +74,12 @@ The assistant can ground its English in Kaleva's own [News in English archive](h
 - **Retrieval.** Retrieval is deterministic, with no embeddings. A reference scores 2 points per shared topic and 3 per matching term pair. References scoring at least 3 are kept, up to 3. Otherwise the draft is labelled **standard translation**.
 - **Prompt order.** The Finnish source comes first. The style guidance says it is not about the story, and that no place, person, role, figure or event may be added.
 - **Checks.** Fidelity checks flag any name or figure from a reference article that is not in the source, and any reference ID the model cites that was not provided.
-- **Transparency.** The editor sees the matched references before generation, even without an API key. After generation they also see the Finnish source next to the proposed English, the mode, and which references the model reports using. Readers see a one-line disclosure.
+- **Transparency.** The editor sees the matched references before generation, even without the AI backend. After generation they also see the Finnish source next to the proposed English, the mode, and which references the model reports using. Readers see a one-line disclosure.
 - **Caveat.** These are historical 2012 references, not necessarily current standards. For example, the 2012 term "kindergarten" is shown with a note to prefer the City of Oulu's current "ECEC centre".
 
 ### Deliberate boundaries
 
-The eVaka story and survey workflow use prepared fixtures, labelled as simulations. The only real model integration is the editorial AI assistant described below; it works only when a server API key is configured. No crawler, payment processor, authentication, email delivery, tracking service or database is connected. The source desk makes real read-only requests to Kaleva RSS and one Oulu open-data endpoint via `/api/sources`; drafts and translations remain simulated. Alex North is a fictional reviewer. Public newsroom controls demonstrate review responsibility; they are not secure production administration. The seeded assertion detector covers the known demo assertion; arbitrary text still needs genuine human fact checking.
+The eVaka story and survey workflow use prepared fixtures, labelled as simulations. The only real model integration is the editorial AI assistant described below; it works only when the Agent SDK backend is configured. No crawler, payment processor, authentication, email delivery, tracking service or database is connected. The source desk makes real read-only requests to Kaleva RSS and one Oulu open-data endpoint via `/api/sources`; drafts and translations remain simulated. Alex North is a fictional reviewer. Public newsroom controls demonstrate review responsibility; they are not secure production administration. The seeded assertion detector covers the known demo assertion; arbitrary text still needs genuine human fact checking.
 
 Questions and forms stay on the device. New live RSS leads and other queue questions are blocked from the prepared eVaka draft: they require new reporting, not automatic publication. Membership activation takes no money. Prices are proposed test offers, not Kaleva's prices. There are no asserted customers, partnerships, audience figures or revenue. Employers fund access, never coverage decisions or individual reading surveillance.
 

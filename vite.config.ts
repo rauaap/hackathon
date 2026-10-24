@@ -67,7 +67,8 @@ export default defineConfig(({ mode }) => {
   // Avain luetaan .env.local-tiedostosta vain palvelimen prosessiin; ilman VITE_-etuliitettä se ei päädy selaimeen.
   const env = loadEnv(mode, process.cwd(), "");
   for (const key of [
-    "ANTHROPIC_API_KEY",
+    "AGENT_BACKEND_URL",
+    "AGENT_BACKEND_SECRET",
     "NEWSROOM_ACCESS_CODE",
     "ASSISTANT_MAX_CALLS_PER_HOUR",
     "ASSISTANT_MAX_CALLS_PER_DAY",
