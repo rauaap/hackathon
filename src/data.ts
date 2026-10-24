@@ -235,7 +235,16 @@ export type Question = {
   persona?: Copy;
   // Lukijan jatkokysymys julkaistusta jutusta.
   storyId?: string;
+  // Toimituksen vaihe tässä selaimessa. Julkaisu päätellään jutuista.
+  status?: "review" | "investigating";
 };
+export type QuestionStatus =
+  "submitted" | "review" | "investigating" | "published";
+// Kysymyksen tila Community Radarissa: julkaistu vain, jos hyväksytty juttu vastaa siihen.
+export function questionStatus(q: Question, stories: Story[]): QuestionStatus {
+  if (stories.some((st) => st.questionId === q.id)) return "published";
+  return q.status ?? "submitted";
+}
 export type Correction = { note: Copy; date: string };
 export type Story = {
   id: string;
@@ -250,6 +259,8 @@ export type Story = {
   readerNeed?: string;
   // Julkaisun ketju: lukijan kysymys, valintaperuste ja avoin jatkokysymys.
   question?: Copy;
+  // Mihin jonon kysymykseen julkaisu vastaa (linkki takaisin kysymykseen).
+  questionId?: string;
   reason?: string;
   followUp?: Copy;
   // Julkaistu RSS-vihjeestä: alkuperäinen Kalevan juttu.

@@ -3127,3 +3127,81 @@ select {
 #news-feed-title {
   scroll-margin-top: 24px;
 }
+
+/* Community Radar: lukijan kysymyksen vaiheet näkyvät yhdellä silmäyksellä. */
+.radar {
+  border-top: 3px solid var(--orange);
+}
+.radar-steps {
+  list-style: none;
+  margin: 16px 0 4px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  counter-reset: step;
+}
+.radar-steps li {
+  counter-increment: step;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--ink);
+  border-top: 3px solid var(--line);
+  padding-top: 6px;
+}
+.radar-steps li::before {
+  content: counter(step) ". ";
+  font-weight: 650;
+}
+.radar-steps li.published {
+  border-top-color: #3c5b40;
+}
+.radar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.radar-list .community-question {
+  margin-top: 0;
+  padding: 16px 0;
+}
+.radar-list .community-question h3 {
+  margin: 7px 0 10px;
+}
+.radar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.radar-status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 650;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--ink);
+}
+.radar-status.review,
+.radar-status.investigating {
+  border-color: var(--orange);
+  color: #9a3315;
+}
+.radar-status.published {
+  border-color: #3c5b40;
+  background: #edf0e6;
+  color: #2f4a33;
+}
+.queue-item .radar-status {
+  margin-bottom: 10px;
+}
+.radar-list .text-button {
+  margin-top: 10px;
+}
+.radar-note {
+  margin: 4px 0 14px;
+}
+.radar-link {
+  margin-top: 8px;
+}

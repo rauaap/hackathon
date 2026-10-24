@@ -39,6 +39,17 @@ Before the demo, open the site once and click **Reset demo ↻** in the footer.
    4. Click **Replace unsupported assertion**, tick both checkboxes again, click **Approve reviewed version**, then **Publish to reader feed**.
 8. Click **Your Oulu**. Open the published eVaka story to show the source link, the "what we don't know yet" section and the open follow-up question. Click **Ask a question** to show the private question queue.
 
+## 4b. Community Radar loop (45 seconds)
+
+Message: **"Don't just read the news. Shape it."** Reader question → community interest → editorial selection → verified explanation → published answer.
+
+1. On the landing page, click **Community Radar: shape what we cover ↓**. Show the four stages: Submitted → Under editorial review → Being investigated → Answer published.
+2. On the eVaka iPhone question, click **I wonder this too**. The count goes to 1 and the button locks: one support per question in this browser.
+3. **Newsroom demo ↗** → **Select for coverage**. The status changes to *Under editorial review*. Say: "Support is a signal; the editor decides."
+4. Type a reason and click **Open prepared draft**. The status changes to *Being investigated*, and the dated City of Oulu notice is the source.
+5. Click **Replace unsupported assertion**, tick both checkboxes, then **Approve reviewed version** → **Publish to reader feed**. The status changes to *Answer published*.
+6. **Your Oulu** → Radar → **Read the checked answer**. Show the reader's question, the back-link and the city question still marked *Not yet answered*.
+
 ## 5. Strongest example stories
 
 - **Live RSS (24 Oct):** "Rekan perävaunusta irtosi ovi Pohjantiellä…". It is an Oulu story about traffic and safety, ranks first for students, and matches style reference R4 with the term "traffic".
@@ -83,7 +94,8 @@ Before the demo, open the site once and click **Reset demo ↻** in the footer.
 | Selection of historical 2012 style references | **Working** (production) |
 | Newsroom queue, version-specific two-step approval, publish, corrections | **Working**, but stored only in this browser (localStorage) |
 | eVaka explainer and its draft | **Prepared by the team**, labelled as a concept, not AI |
-| Reader questions, "I wonder this too" support | **Simulated**: stays in this browser, nothing is sent |
+| Community Radar: question stages, editor-driven status, link from published answer back to question | **Working** in the demo, stored only in this browser |
+| Reader questions and "I wonder this too" support | **Simulated**: seeded questions are illustrative, supports start at 0 and count only in this browser, nothing is sent |
 | Editor "Alex North", approvals | **Fictional**: not a Kaleva journalist |
 | Live Claude translation | **Built and tested with mocks; unverified with a real model**: no API key in production |
 | Better quality from style references | **Unverified**: no real model comparison has been run |
