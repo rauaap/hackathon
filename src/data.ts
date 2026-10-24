@@ -86,6 +86,33 @@ export const followUp: Copy = {
   en: "Which phone operating system and browser versions do eVaka notifications support, do they work in Android browsers other than Chrome, and why must an old home screen icon be removed first?",
   fi: "Mitä puhelimen käyttöjärjestelmä- ja selainversioita eVaka-ilmoitukset tukevat, toimivatko ne muissa Android-selaimissa kuin Chromessa ja miksi vanha aloitusnäytön kuvake pitää poistaa ensin?",
 };
+// Community Insight eVaka-kysymykselle. Todisteet ja aukot ovat viittauksia tarkistettuihin
+// listoihin, joten paneeli ei voi esittää todisteena mitään, mitä tiedotteesta ei tarkistettu.
+// Yleisö- ja hyötyrivit ovat toimituksen arvioita, eivät todisteita.
+export const evakaInsight = {
+  need: {
+    en: "Whether eVaka phone notifications work on an iPhone, and what a parent must do to get them.",
+    fi: "Toimivatko eVakan puhelinilmoitukset iPhonella ja mitä vanhemman pitää tehdä saadakseen ne.",
+  },
+  audience: {
+    en: "Parents with a child in early childhood education in Oulu, including newcomers setting up eVaka for the first time. Setup depends on the device; a missed step means no phone notifications.",
+    fi: "Vanhemmat, joiden lapsi on varhaiskasvatuksessa Oulussa, myös eVakan ensimmäistä kertaa käyttöön ottavat tulijat. Käyttöönotto riippuu laitteesta; väliin jäänyt vaihe tarkoittaa, ettei puhelinilmoituksia tule.",
+  },
+  why: {
+    en: "Why it matters: setup depends on the device, and the same open questions affect every family using eVaka.",
+    fi: "Miksi tällä on väliä: käyttöönotto riippuu laitteesta, ja samat avoimet kysymykset koskevat jokaista eVakaa käyttävää perhettä.",
+  },
+  evidence: [1, 4, 5],
+  gaps: [0, 1, 2],
+  crossCommunity: {
+    en: "Finnish-speaking families use the same eVaka service and face the same unanswered device questions. One verified answer, published in English and Finnish, serves both.",
+    fi: "Suomenkieliset perheet käyttävät samaa eVaka-palvelua, ja heillä on samat vastaamattomat laitekysymykset. Yksi tarkistettu vastaus englanniksi ja suomeksi palvelee molempia.",
+  },
+  reason: {
+    en: "An international parent asked, and Finnish-speaking families use the same service. The city’s notice explains setup but leaves device support open, so we separate what is known from what is not and ask the city.",
+    fi: "Kansainvälinen vanhempi kysyi, ja suomenkieliset perheet käyttävät samaa palvelua. Kaupungin tiedote kertoo käyttöönotosta, mutta jättää laitetuen auki, joten erottelemme tiedetyn tuntemattomasta ja kysymme kaupungilta.",
+  },
+};
 export const contexts: Record<Group, Copy> = {
   everyone: {
     en: "This concerns you only if you use eVaka for a child in early childhood education in Oulu. Start with the city’s notice, check its date and tell us what still needs explaining.",

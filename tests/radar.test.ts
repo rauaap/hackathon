@@ -6,6 +6,10 @@ import {
   checkQuestion,
   QUESTION_LIMITS,
   PREPARED_QUESTION_ID,
+  evakaInsight,
+  knownClaims,
+  unknowns,
+  draftInitial,
   type Story,
 } from "../src/data.ts";
 
@@ -123,5 +127,29 @@ test("rapid and repeated submissions from one browser are limited", () => {
       T,
     ),
     null,
+  );
+});
+
+test("Community Insight evidence and gaps come only from the checked source lists", () => {
+  for (const i of evakaInsight.evidence)
+    assert.ok(knownClaims[i], `claim ${i}`);
+  for (const i of evakaInsight.gaps) assert.ok(unknowns[i], `gap ${i}`);
+  // Aukot päätyvät julkaistavaan luonnokseen molemmilla kielillä: vastaamatonta ei esitetä vastattuna.
+  for (const i of evakaInsight.gaps)
+    for (const l of ["en", "fi"] as const)
+      assert.ok(draftInitial[l].includes(unknowns[i][l]), `${l} gap ${i}`);
+  // Arviot ja ehdotettu perustelu eivät väitä kaupungin vastanneen.
+  for (const copy of [
+    evakaInsight.audience,
+    evakaInsight.crossCommunity,
+    evakaInsight.reason,
+  ])
+    assert.ok(
+      !/city (said|confirmed|answered)|kaupunki (vastasi|vahvisti)/i.test(
+        copy.en + copy.fi,
+      ),
+    );
+  assert.ok(
+    evakaInsight.reason.en.length >= 10 && evakaInsight.reason.fi.length >= 10,
   );
 });

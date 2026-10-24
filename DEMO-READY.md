@@ -4,99 +4,96 @@ Production: https://kaleva-local.vercel.app · PR: https://github.com/rauaap/hac
 
 ## 1. One sentence
 
-Kaleva Local turns Kaleva's Finnish local news into trustworthy English explainers for Oulu's international residents: stories are ranked by what matters to them, translated with AI assistance, and published only after a human editor checks every fact.
+**Don't just read the news. Shape it.** International residents in Oulu ask what they need to know, Kaleva journalists verify the answers, and the explanation is published in English and Finnish so the whole city benefits.
 
-## 2. Audience
+Supporting line: *"International residents help reveal what Oulu needs to know. Journalists verify the facts and make the answers accessible across languages."*
 
-- **Readers:** international students, professionals and families in Oulu who don't read Finnish well.
-- **Buyer (hypothesis):** Oulu-area employers that recruit international staff and want them to settle in and stay.
+## 2. Primary audience
 
-## 3. Three-minute pitch outline
+- **Readers:** international parents, professionals and students in Oulu who don't read Finnish well, and the Finnish-speaking readers who share the same questions.
+- **Customer (hypothesis):** Kaleva Media. A possible pilot funder is an Oulu-area employer hiring international staff.
+
+## 3. The feedback loop
+
+**International resident asks → community interest → journalist investigates → verified bilingual explanation → both communities benefit**
+
+| Stage in the product | What it shows |
+|---|---|
+| Community Radar: Submitted, with "I wonder this too" | The question and its interest signal (one support per browser) |
+| Under editorial review → Community Insight panel | Need, audience, signal, **verified evidence**, reporting gap, value to Finnish-speaking families |
+| Being investigated → prepared draft | Unsupported claim blocks publication; fact and language reviews are both required |
+| Answer published | English and Finnish versions, the City of Oulu source, a link back to the question; the city's follow-up is still *Not yet answered* |
+
+Support is a signal; the editor decides. No status changes because of votes.
+
+## 4. The 45-second demo: exact clicks
+
+**Start:** click **Reset demo ↻** in the footer or in the newsroom notice, then go to **Your Oulu**.
+
+| Time | Click | Say |
+|---|---|---|
+| 0–10 s | 1. **Community Radar: shape what we cover ↓**<br>2. **I wonder this too** on the eVaka iPhone question | "A parent asks. Others support it. The question shows why it matters, and its status is still *Submitted*." |
+| 10–20 s | 3. **Newsroom demo ↗**<br>4. **Select for coverage** (first item) | "The Community Insight panel shows the need, the signal (*a signal, not a decision*), and the verified evidence from the City of Oulu notice, which is not a Kaleva article." |
+| 20–35 s | 5. **Use the Community Insight as the reason**<br>6. **Open prepared draft**<br>7. **Replace unsupported assertion**<br>8–9. Tick **I checked both drafts** and **I reviewed the English**<br>10. **Approve reviewed version** | "The claim *works on every phone* blocks publication until it is fixed. Facts and language must both be checked, and any edit resets the approval." |
+| 35–45 s | 11. **Publish to reader feed**<br>12. **Open the published answer**<br>13. **Lue suomeksi**<br>14. **Your Oulu** | "One verified answer, two language communities. Back on the Radar, the question now reads *Answer published* and links to the answer." |
+
+That is 14 clicks. Automated runs pass on desktop and at 390 px on mobile. Rehearse once: with narration it takes about 45–55 seconds. If time is short, skip click 13.
+
+## 5. Three-minute pitch (English)
 
 | Time | Say | Show |
 |---|---|---|
-| 0:00–0:30 | Oulu has thousands of international residents, but local news about daycare, transport, strikes and city services is published in Finnish. People miss things that affect their daily lives. | Landing page: the headline and one-line value proposition |
-| 0:30–1:45 | Real Kaleva RSS, ranked per audience with visible reasons. An editor opens a story; the AI translation is guided by historical Kaleva English style references; a human verifies and approves. | Feed → newsroom → source brief → approval (clicks below) |
-| 1:45–2:20 | Proposed B2B model: a paid six-week pilot with one employer (€900 test fee), plus clearly separated local advertising. This is a hypothesis: we have no customer validation yet. | "Membership & business" tab |
-| 2:20–3:00 | Different from machine translation: sources stay visible, gaps are stated, nothing publishes without human review, and reader questions guide coverage. Kaleva gains a new audience and a new revenue test. | Published story with source link and review note |
+| 0:00–0:30 | "International residents aren't just missing Finnish news. They're missing a voice in local journalism." Then: one interviewee didn't know Kaleva existed and got local information from WhatsApp, Instagram, TikTok, Google and Yle. Say it is one interview. | Landing page and its core message |
+| 0:30–1:15 | The 45-second loop above. | Radar → Insight → approval → bilingual answer |
+| 1:15–1:45 | Daily relevance: real Kaleva RSS ranked per audience, with visible reasons; uncertain stories are marked as such. AI translation is server-side, guided by historical Kaleva English style, and always needs human approval. | Feed: **Professionals & families**, then **Why it ranks here** |
+| 1:45–2:20 | Value for Kaleva: audience growth, editorial insight, and a paid employer pilot. **All three are hypotheses.** | **Membership & business** → "What Kaleva could gain" |
+| 2:20–3:00 | "Kaleva Local gives them that voice and turns their questions into verified journalism that connects the whole city." | Radar showing *Answer published* |
 
-## 4. Exact clicks
+## 6. Business value and unvalidated assumptions
 
-Before the demo, open the site once and click **Reset demo ↻** in the footer.
+- **Audience growth:** reach international residents who may not use Kaleva today.
+- **Editorial insight:** questions reveal unmet local information needs, which also matter to Finnish-speaking readers.
+- **Revenue potential:** a six-week employer-funded pilot (€900 test fee) plus clearly separated local ads.
+- **Not validated:**
+  - Demand: our evidence is a single interview.
+  - Employer willingness to pay.
+  - Repeat use.
+  - Editor time per answer.
+  - AI cost per story, which is unmeasured.
+  - Kaleva's permission to reuse its content.
 
-1. Landing page: point at the value proposition. Click **Professionals & families**, then **Today's Kaleva news, ranked for you ↓**.
-2. Open **Why it ranks here** on the top story to show the scoring reasons, e.g. "Oulu +2" or "Transport +1.5".
-3. Toggle **Students** to show that the order changes. Toggle **Everyone** to show the plain chronological feed.
-4. On the example story, click **Ask the newsroom to explain**, then **Open newsroom demo**.
-5. In the queue: on that story, click **Select for coverage**. Type a reason, e.g. "Affects commuters in Oulu." Then click **Open source brief**.
-6. AI assistant panel: show **Translation mode: historical Kaleva style-grounded, 2012**, the linked references and the "historical, style only" labels.
-   - **API key configured:** enter the access code and click **Generate English draft**. Show the Finnish source and the proposed English side by side, and the `[EDITOR: …]` placeholders that block approval.
-   - **No key:** show the "AI unavailable" message. Say plainly that the AI is not connected in this demo.
-7. Human verification, the most reliable path:
-   1. Click **Your Oulu → Newsroom demo ↗**.
-   2. Select the first queue item (eVaka) with **Select for coverage**, type a reason, then click **Open prepared draft**.
-   3. Tick both review checkboxes and show that approval is still blocked by the claim marked **BLOCKS PUBLICATION**.
-   4. Click **Replace unsupported assertion**, tick both checkboxes again, click **Approve reviewed version**, then **Publish to reader feed**.
-8. Click **Your Oulu**. Open the published eVaka story to show the source link, the "what we don't know yet" section and the open follow-up question. Click **Ask a question** to show the private question queue.
+## 7. What is real, what is simulated
 
-## 4b. Community Radar loop (45 seconds)
-
-Message: **"Don't just read the news. Shape it."** Reader question → community interest → editorial selection → verified explanation → published answer.
-
-1. On the landing page, click **Community Radar: shape what we cover ↓**. Show the four stages: Submitted → Under editorial review → Being investigated → Answer published.
-2. On the eVaka iPhone question, click **I wonder this too**. The count goes to 1 and the button locks: one support per question in this browser.
-3. **Newsroom demo ↗** → **Select for coverage**. The status changes to *Under editorial review*. Say: "Support is a signal; the editor decides."
-4. Type a reason and click **Open prepared draft**. The status changes to *Being investigated*, and the dated City of Oulu notice is the source.
-5. Click **Replace unsupported assertion**, tick both checkboxes, then **Approve reviewed version** → **Publish to reader feed**. The status changes to *Answer published*.
-6. **Your Oulu** → Radar → **Read the checked answer**. Show the reader's question, the back-link and the city question still marked *Not yet answered*.
-
-## 5. Strongest example stories
-
-- **Live RSS (24 Oct):** "Rekan perävaunusta irtosi ovi Pohjantiellä…". It is an Oulu story about traffic and safety, ranks first for students, and matches style reference R4 with the term "traffic".
-  - **Alternatives:** the Parkkipate strike (work, R9) and "Lapsiperheköyhyys näkyy Oulun päiväkodeissa" (families, R2). R2 also shows the 2012 term "kindergarten" flagged in favour of the current "ECEC centre".
-- **Complete end-to-end story:** the eVaka explainer. It has a dated City of Oulu source, a known/unknown split, a blocked unsupported claim and a follow-up question to the city.
-
-## 6. Backup plan
-
-- **RSS changed:** the feed shows whatever Kaleva publishes that day. Pick any Oulu story near the top of either audience. If Kaleva is unreachable, the page shows the last saved copy or a clear error with a link to kaleva.fi. The eVaka path (step 7) needs no RSS.
-- **AI unavailable:** the panel says so, and nothing fake is shown. Continue with step 7. The prepared eVaka draft was written by the team and is labelled as a concept. Never call it AI output.
-- **No network:** use the screenshots in `output/playwright/`.
-
-## 7. Three benefits for Kaleva
-
-1. **New audience:** reaches international residents Kaleva doesn't serve today, using journalism it already publishes.
-2. **New revenue test:** an employer pilot and local advertising aimed at a clearly defined group.
-3. **Trust as a differentiator:** visible sources, mandatory human review and stated gaps protect the brand, unlike raw machine translation.
-
-## 8. Business model (unverified)
-
-- **Model:** a six-week paid employer pilot (€900 test fee) plus clearly separated local ads.
-- **Unverified assumptions:**
-  - Employers will pay.
-  - International residents will return weekly.
-  - Editor time per story fits within the price.
-  - AI cost per story is small. This has not been measured, because no real model call has run.
-  - Kaleva allows this use of its content.
-
-## 9. Likely judge questions
-
-- **"Is the AI real?"** The integration calls Claude on the server, behind an access code and call caps. On demo day it is [live / not configured: say which]. We never show simulated AI output as real.
-- **"Why not just Google Translate?"** Translation is the easy part. We choose what matters to each audience, state what the source doesn't say, and nothing publishes without an editor.
-- **"Can old 2012 articles introduce wrong facts?"** No. Only our own style notes and term pairs reach the model, never Kaleva's article text. Reference names and figures that appear in a draft are flagged automatically.
-- **"How does ranking work?"** Transparent rules: topic weights per audience, plus points for Oulu, the Oulu region and recency, minus points for other towns and opinion pieces. Every reason is shown to the reader.
-- **"Who pays?"** Our hypothesis is employers recruiting international talent. The next step is one paid pilot, not a scale-up.
-
-## 10. Status
-
-| Feature | Status |
+| Real | Simulated or unverified |
 |---|---|
-| Live Kaleva RSS feed, per-audience ranking with reasons | **Working** (production) |
-| Selection of historical 2012 style references | **Working** (production) |
-| Newsroom queue, version-specific two-step approval, publish, corrections | **Working**, but stored only in this browser (localStorage) |
-| eVaka explainer and its draft | **Prepared by the team**, labelled as a concept, not AI |
-| Community Radar: question stages, editor-driven status, link from published answer back to question | **Working** in the demo, stored only in this browser |
-| Reader questions and "I wonder this too" support | **Simulated**: seeded questions are illustrative, supports start at 0 and count only in this browser, nothing is sent |
-| Editor "Alex North", approvals | **Fictional**: not a Kaleva journalist |
-| Live Claude translation | **Built and tested with mocks; unverified with a real model**: no API key in production |
-| Better quality from style references | **Unverified**: no real model comparison has been run |
-| Business model, willingness to pay | **Hypothesis** |
+| Live Kaleva RSS and explainable per-audience ranking | Seeded questions, labelled *illustrative*; the eVaka parent is fictional |
+| City of Oulu eVaka notice (14 Oct 2026) as the only evidence | Supports and statuses exist **only in this browser**; nothing is shared |
+| Review gates in the newsroom workflow: blocked claim, both reviews, version-specific approval, corrections | The newsroom is a **public simulation** with no sign-in; editor Alex North is fictional |
+| Server-side AI endpoint protection (access code, caps) | The real Claude translation has **never run**: there is no API key. Mocked responses are only used in tests |
+| Browser-side spam checks on questions | They are UX safeguards, not server security (see `SECURITY.md`) |
+
+Never say Kaleva's newsroom published the story.
+
+## 8. Fallbacks
+
+- **RSS changed or down:** the demo loop needs no RSS. If Kaleva is unreachable, the feed shows the last saved copy or a clear error.
+- **AI unavailable:** the loop uses the prepared eVaka draft, which was written by the team, is labelled as a concept, and is never presented as AI output.
+- **Network down:** use the screenshots in `output/playwright/demo45-2026-10-24/`.
+
+## 9. Why a translation button is not enough
+
+A translation button translates what Kaleva already chose to publish. Kaleva Local adds:
+1. **Reader questions that reveal gaps**: what newcomers need that nobody has explained yet.
+2. **Editorial verification**: what the source says versus what it leaves open, with a follow-up question to the city.
+3. **Answers for both language communities**: the same checked text in English and Finnish.
+
+Machine translation, an AI aggregator or a chatbot produces text; this produces accountable journalism that the community asked for.
+
+## 10. Before a real Kaleva pilot
+
+1. Get Kaleva's permission for content reuse and AI processing, since `robots.txt` opts out of AI crawlers.
+2. Add shared participation with server-side protections: database-level duplicate votes, rate limits, moderation, bot checks. Design: `SECURITY.md`.
+3. Add editor accounts (SSO) and server-validated publishing in place of the public simulation.
+4. Add an `ANTHROPIC_API_KEY` with a spend limit, then run the six-call comparison of standard and style-grounded translation.
+5. Have a team member review the 25 relevance labels (`reviewed: false`), then label a fresh RSS snapshot as a held-out test.
+6. Run a six-week pilot with one employer: measure repeat use, trust, editor time and willingness to pay.
