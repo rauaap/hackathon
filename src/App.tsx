@@ -40,6 +40,9 @@ import {
   type Group,
   type Story,
   type DemoState,
+  type Question,
+  type QuestionStatus,
+  questionStatus,
 } from "./data";
 
 import type { AssistDraft } from "../api/news.ts";
@@ -356,6 +359,40 @@ export default function App() {
     (q) => q.id === state.draftFor,
   )?.source;
   const selectedQuestion = state.questions.find((q) => q.id === state.selected);
+  const statusName: Record<QuestionStatus, Copy> = {
+    submitted: { en: "Submitted", fi: "Lähetetty" },
+    review: { en: "Under editorial review", fi: "Toimituksen arvioitavana" },
+    investigating: { en: "Being investigated", fi: "Selvitettävänä" },
+    published: { en: "Answer published", fi: "Vastaus julkaistu" },
+  };
+  const statusPill = (q: Question) => {
+    const st = questionStatus(q, state.stories);
+    return <span className={`radar-status ${st}`}>{c(statusName[st])}</span>;
+  };
+  const answerFor = (id: string) =>
+    state.stories.find((st) => st.questionId === id);
+  // Yksi tuki kysymystä kohden tässä selaimessa.
+  function supportQuestion(id: string) {
+    setState((s) => ({
+      ...s,
+      questions: s.questions.map((q) =>
+        q.id === id && !q.supported
+          ? { ...q, supported: true, supports: q.supports + 1 }
+          : q,
+      ),
+    }));
+  }
+  // Tila etenee vain toimittajan omista toimista, ei koskaan taaksepäin.
+  function advanceQuestion(id: string, status: "review" | "investigating") {
+    setState((s) => ({
+      ...s,
+      questions: s.questions.map((q) =>
+        q.id === id && !(status === "review" && q.status === "investigating")
+          ? { ...q, status }
+          : q,
+      ),
+    }));
+  }
   const validApproval =
     !!state.approval &&
     state.approval.revision === state.revision &&
@@ -553,6 +590,7 @@ export default function App() {
             review: "Alex North — fictional demo editor",
             readerNeed: s.readerNeed,
             question: question?.text,
+            questionId: question?.id,
             reason: s.reason.trim(),
             ...(lead ? { sourceLead: lead } : { followUp: { ...followUp } }),
           },
@@ -815,6 +853,25 @@ export default function App() {
                   )}
                 </span>
                 <p>{c(item.question)}</p>
+                {item.questionId && (
+                  <small className="radar-link">
+                    {t(
+                      "Community Radar: this answer closes the reader question above. ",
+                      "Community Radar: tämä vastaus koskee yllä olevaa lukijan kysymystä. ",
+                    )}
+                    {(() => {
+                      const q = state.questions.find(
+                        (x) => x.id === item.questionId,
+                      );
+                      return q
+                        ? t(
+                            `${q.supports} support${q.supports === 1 ? "" : "s"} in this browser.`,
+                            `${q.supports} tukea tässä selaimessa.`,
+                          )
+                        : "";
+                    })()}
+                  </small>
+                )}
                 {item.reason && (
                   <small>
                     {t(
@@ -1213,6 +1270,20 @@ export default function App() {
                   )}{" "}
                   ↓
                 </button>
+                <button
+                  className="text-button feed-jump"
+                  onClick={() =>
+                    document
+                      .getElementById("community-radar")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                >
+                  {t(
+                    "Community Radar: shape what we cover",
+                    "Community Radar: vaikuta siihen, mitä selvitämme",
+                  )}{" "}
+                  ↓
+                </button>
               </div>
               <div className="reader-filter">
                 <span>
@@ -1289,69 +1360,116 @@ export default function App() {
                 </div>
               </article>
               <aside className="right-rail">
-                <section className="community-card">
+                <section
+                  className="community-card radar"
+                  id="community-radar"
+                  aria-labelledby="radar-title"
+                >
                   <div className="rail-heading">
                     <Icon name="chat" />
                     <span className="eyebrow">
-                      {t("THE COMMUNITY ASKS", "YHTEISÖ KYSYY")}
+                      {t("COMMUNITY RADAR", "COMMUNITY RADAR")}
                     </span>
                   </div>
-                  <h2>
+                  <h2 id="radar-title">
                     {t(
-                      "What should we explain next?",
-                      "Mitä meidän pitäisi selittää seuraavaksi?",
+                      "Don’t just read the news. Shape it.",
+                      "Älä vain lue uutisia. Vaikuta niihin.",
                     )}
                   </h2>
                   <p className="muted">
                     {t(
-                      "Good local journalism starts with a question. Yours could be next.",
-                      "Hyvä paikallisjournalismi alkaa kysymyksestä. Seuraava voi olla sinun.",
+                      "Ask what you need explained about Oulu or a Kaleva story, and support questions you share. A human editor decides what to investigate: support shows interest, it never decides coverage on its own.",
+                      "Kysy, mitä Oulusta tai Kalevan jutusta pitäisi selittää, ja tue kysymyksiä, joita mietit itsekin. Ihmistoimittaja päättää, mitä selvitetään: tuki kertoo kiinnostuksesta, mutta ei yksin ratkaise juttuvalintaa.",
                     )}
                   </p>
-                  <div className="community-question">
-                    <span className="micro-label">
-                      {t(
-                        "ILLUSTRATIVE READER QUESTION",
-                        "HAVAINNOLLISTAVA LUKIJAKYSYMYS",
-                      )}
-                      {state.questions[0].persona &&
-                        ` · ${c(state.questions[0].persona).toUpperCase()}`}
-                    </span>
-                    <h3>{c(state.questions[0].text)}</h3>
-                    <button
-                      className={`support-button ${state.questions[0].supported ? "supported" : ""}`}
-                      disabled={state.questions[0].supported}
-                      onClick={() =>
-                        setState((s) => ({
-                          ...s,
-                          questions: s.questions.map((q, i) =>
-                            i === 0
-                              ? {
-                                  ...q,
-                                  supported: true,
-                                  supports: q.supports + 1,
-                                }
-                              : q,
-                          ),
-                        }))
-                      }
-                    >
-                      <Icon
-                        name={state.questions[0].supported ? "check" : "plus"}
-                        size={14}
-                      />
-                      {state.questions[0].supported
-                        ? t("Supported", "Tuettu")
-                        : t("I wonder this too", "Minäkin mietin tätä")}
-                      <span>{state.questions[0].supports}</span>
-                    </button>
-                    <small>
-                      {t(
-                        "Support recorded in this browser only.",
-                        "Tuki tallentuu vain tähän selaimeen.",
-                      )}
-                    </small>
-                  </div>
+                  <ol
+                    className="radar-steps"
+                    aria-label={t("Question stages", "Kysymyksen vaiheet")}
+                  >
+                    {(
+                      [
+                        "submitted",
+                        "review",
+                        "investigating",
+                        "published",
+                      ] as QuestionStatus[]
+                    ).map((st) => (
+                      <li key={st} className={st}>
+                        {c(statusName[st])}
+                      </li>
+                    ))}
+                  </ol>
+                  <ul className="radar-list">
+                    {[
+                      ...state.questions.filter((q) => !q.private),
+                      ...state.questions.filter((q) => q.private).slice(-3),
+                    ].map((q) => {
+                      const answer = answerFor(q.id);
+                      return (
+                        <li key={q.id} className="community-question">
+                          <span className="micro-label">
+                            {q.private
+                              ? q.source
+                                ? t(
+                                    "YOUR QUESTION ABOUT A KALEVA STORY · ONLY VISIBLE TO YOU",
+                                    "KYSYMYKSESI KALEVAN JUTUSTA · NÄKYY VAIN SINULLE",
+                                  )
+                                : t(
+                                    "YOUR QUESTION · ONLY VISIBLE TO YOU",
+                                    "KYSYMYKSESI · NÄKYY VAIN SINULLE",
+                                  )
+                              : t(
+                                  "ILLUSTRATIVE READER QUESTION",
+                                  "HAVAINNOLLISTAVA LUKIJAKYSYMYS",
+                                )}
+                            {q.persona && ` · ${c(q.persona).toUpperCase()}`}
+                          </span>
+                          <h3>{c(q.text)}</h3>
+                          <div className="radar-row">
+                            {statusPill(q)}
+                            {!q.private && (
+                              <button
+                                className={`support-button ${q.supported ? "supported" : ""}`}
+                                disabled={q.supported}
+                                onClick={() => supportQuestion(q.id)}
+                              >
+                                <Icon
+                                  name={q.supported ? "check" : "plus"}
+                                  size={14}
+                                />
+                                {q.supported
+                                  ? t("Supported", "Tuettu")
+                                  : t(
+                                      "I wonder this too",
+                                      "Minäkin mietin tätä",
+                                    )}
+                                <span>{q.supports}</span>
+                              </button>
+                            )}
+                          </div>
+                          {answer && (
+                            <button
+                              className="text-button"
+                              onClick={() => showStory(answer)}
+                            >
+                              {t(
+                                "Read the checked answer",
+                                "Lue tarkistettu vastaus",
+                              )}{" "}
+                              <Icon name="arrow" size={14} />
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <small className="radar-note">
+                    {t(
+                      "Seeded questions are illustrative, not real readers. Support is counted in this browser only, once per question. Stages change only when the editor acts in the newsroom demo.",
+                      "Valmiit kysymykset ovat havainnollistavia, eivät oikeiden lukijoiden. Tuki lasketaan vain tässä selaimessa, kerran kysymystä kohden. Vaihe muuttuu vain, kun toimittaja toimii toimitusdemossa.",
+                    )}
+                  </small>
                   <button
                     className="primary full"
                     onClick={() => setModal("question")}
@@ -1970,6 +2088,7 @@ export default function App() {
                     {q.persona && ` · ${c(q.persona).toUpperCase()}`}
                   </span>
                   <h3>{c(q.text)}</h3>
+                  {statusPill(q)}
                   {q.kind === "observation" && (
                     <span className="badge">
                       {t(
@@ -2020,6 +2139,7 @@ export default function App() {
                           language: false,
                           rejected: false,
                         }));
+                        advanceQuestion(q.id, "review");
                         setDraftOpen(false);
                       }}
                     >
@@ -2179,6 +2299,7 @@ export default function App() {
                 }
                 onClick={() => {
                   openDraft(state.selected);
+                  advanceQuestion(state.selected, "investigating");
                   setDraftOpen(true);
                 }}
               >
