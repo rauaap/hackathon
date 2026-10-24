@@ -154,8 +154,8 @@ export default function AssistantPanel({
   }
   const messages: Record<Failure, string> = {
     unavailable: t(
-      "AI assistant unavailable: the server has no LLM backend or editor access code configured. Nothing is generated or simulated. Continue with the manual brief below.",
-      "AI-avustaja ei ole käytettävissä: palvelimelle ei ole määritetty kielimallin API-avainta tai toimituksen pääsykoodia. Mitään ei tuoteta eikä simuloida. Jatka alla olevalla käsin tehtävällä pohjalla.",
+      "AI assistant unavailable: the AI backend is not configured or not reachable, or no editor access code is set. Nothing is generated or simulated. Continue with the manual brief below.",
+      "AI-avustaja ei ole käytettävissä: tekoälytaustapalvelua ei ole määritetty tai se ei vastaa, tai toimituksen pääsykoodi puuttuu. Mitään ei tuoteta eikä simuloida. Jatka alla olevalla käsin tehtävällä pohjalla.",
     ),
     unauthorized: t(
       "The editor access code was not accepted.",
@@ -228,8 +228,8 @@ export default function AssistantPanel({
       </div>
       <p>
         {t(
-          "Sends only this story’s Finnish headline and Kaleva’s feed description, re-read on the server from the live feed, to Claude. It returns an English translation, a relevance note and what the source does not say. The model never sees the full article. Its output becomes an unpublished draft that needs both human reviews.",
-          "Lähettää Claudelle vain tämän jutun suomenkielisen otsikon ja Kalevan syötekuvauksen, jotka palvelin lukee uudelleen syötteestä. Vastauksena tulee englanninkielinen käännös, arvio merkityksestä ja lista siitä, mitä lähde ei kerro. Malli ei näe koko juttua. Tulos on julkaisematon luonnos, joka vaatii molemmat ihmistarkistukset.",
+          "Sends only this story’s Finnish headline and Kaleva’s feed description, re-read on the server from the live feed, to Claude. It returns an English translation, a relevance note and what the source does not say. The model never sees the full article. Its output becomes an unpublished draft that needs both human reviews. “Available” means the AI backend answered a health check; only a returned draft shows that generation worked.",
+          "Lähettää Claudelle vain tämän jutun suomenkielisen otsikon ja Kalevan syötekuvauksen, jotka palvelin lukee uudelleen syötteestä. Vastauksena tulee englanninkielinen käännös, arvio merkityksestä ja lista siitä, mitä lähde ei kerro. Malli ei näe koko juttua. Tulos on julkaisematon luonnos, joka vaatii molemmat ihmistarkistukset. ”Käytettävissä” tarkoittaa, että taustapalvelu vastasi tilatarkistukseen; vain palautettu luonnos osoittaa generoinnin toimineen.",
         )}
       </p>
       {!existing && failure !== "unavailable" && (
