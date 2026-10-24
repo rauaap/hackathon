@@ -72,7 +72,7 @@ export type NewsResponse = {
   assistant: {
     available: boolean;
     model: string;
-    reason: "no_api_key" | "no_access_code" | null;
+    reason: "no_backend" | "no_access_code" | null;
   };
   items: (NewsItem & { styleReferences: StyleMatch[] })[];
   styleGuide: {
@@ -1261,11 +1261,15 @@ let sdkClient: AssistClient | null = null;
 export function setAssistantClient(client: AssistClient | null) {
   clientOverride = client;
 }
-// Avustaja on käytössä vain, kun sekä API-avain että toimituksen pääsykoodi on määritetty (fail closed).
+// Mallikutsu tehdään erillisellä Agent SDK -palvelimella (agent-server/), joten Vercel ei tarvitse Anthropic-avainta.
+const backendUrl = () => process.env.AGENT_BACKEND_URL ?? "";
+const backendSecret = () => process.env.AGENT_BACKEND_SECRET ?? "";
+// Avustaja on käytössä vain, kun sekä taustapalvelu että toimituksen pääsykoodi on määritetty (fail closed).
 const MIN_CODE_LENGTH = 24;
 const accessCode = () => process.env.NEWSROOM_ACCESS_CODE ?? "";
-function assistantReason(): "no_api_key" | "no_access_code" | null {
-  if (!clientOverride && !process.env.ANTHROPIC_API_KEY) return "no_api_key";
+function assistantReason(): "no_backend" | "no_access_code" | null {
+  if (!clientOverride && !(backendUrl() && backendSecret()))
+    return "no_backend";
   if (accessCode().length < MIN_CODE_LENGTH) return "no_access_code";
   return null;
 }
@@ -1283,13 +1287,28 @@ function authorized(request: Request) {
 }
 async function assistantClient(): Promise<AssistClient> {
   if (clientOverride) return clientOverride;
-  if (!sdkClient) {
-    const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    const anthropic = new Anthropic({ timeout: 45_000, maxRetries: 1 });
+  if (!sdkClient)
     sdkClient = {
-      create: (params) => anthropic.beta.messages.create(params),
+      // Taustapalvelu palauttaa saman vastausmuodon kuin Messages API.
+      create: async (params) => {
+        const response = await fetch(new URL("/generate", backendUrl()), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${backendSecret()}`,
+          },
+          body: JSON.stringify({
+            system: params.system,
+            prompt: params.messages[0].content,
+            schema: params.output_config?.format?.schema,
+          }),
+          signal: AbortSignal.timeout(58_000),
+        });
+        if (!response.ok)
+          throw new Error(`Agent backend returned ${response.status}`);
+        return (await response.json()) as AssistReply;
+      },
     };
-  }
   return sdkClient;
 }
 

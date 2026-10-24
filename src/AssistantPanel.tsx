@@ -154,7 +154,7 @@ export default function AssistantPanel({
   }
   const messages: Record<Failure, string> = {
     unavailable: t(
-      "AI assistant unavailable: the server has no LLM API key or editor access code configured. Nothing is generated or simulated. Continue with the manual brief below.",
+      "AI assistant unavailable: the server has no LLM backend or editor access code configured. Nothing is generated or simulated. Continue with the manual brief below.",
       "AI-avustaja ei ole käytettävissä: palvelimelle ei ole määritetty kielimallin API-avainta tai toimituksen pääsykoodia. Mitään ei tuoteta eikä simuloida. Jatka alla olevalla käsin tehtävällä pohjalla.",
     ),
     unauthorized: t(

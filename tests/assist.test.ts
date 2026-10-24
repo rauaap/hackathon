@@ -72,7 +72,8 @@ const post = (id: unknown, code: string | null = CODE) =>
     }),
   );
 const ENV = [
-  "ANTHROPIC_API_KEY",
+  "AGENT_BACKEND_URL",
+  "AGENT_BACKEND_SECRET",
   "NEWSROOM_ACCESS_CODE",
   "ASSISTANT_MAX_CALLS_PER_HOUR",
   "ASSISTANT_MAX_CALLS_PER_DAY",
