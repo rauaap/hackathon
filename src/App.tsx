@@ -42,7 +42,10 @@ import {
   type DemoState,
   type Question,
   type QuestionStatus,
+  type QuestionRejection,
   questionStatus,
+  checkQuestion,
+  QUESTION_LIMITS,
 } from "./data";
 
 import type { AssistDraft } from "../api/news.ts";
@@ -267,6 +270,49 @@ export default function App() {
   >(null);
   const [story, setStory] = useState<Story | "main" | null>(null);
   const [toast, setToast] = useState("");
+  const [questionError, setQuestionError] = useState<QuestionRejection | null>(
+    null,
+  );
+  // Uusi lomake alkaa ilman edellistä virhettä.
+  useEffect(() => setQuestionError(null), [modal]);
+  const rejectionText: Record<QuestionRejection, Copy> = {
+    "too-short": {
+      en: `Please write at least ${QUESTION_LIMITS.min} characters so an editor can understand the question.`,
+      fi: `Kirjoita vähintään ${QUESTION_LIMITS.min} merkkiä, jotta toimittaja ymmärtää kysymyksen.`,
+    },
+    "too-long": {
+      en: `Please keep it under ${QUESTION_LIMITS.max} characters.`,
+      fi: `Pidä viesti alle ${QUESTION_LIMITS.max} merkissä.`,
+    },
+    "no-words": {
+      en: "Please write your question in words.",
+      fi: "Kirjoita kysymyksesi sanoin.",
+    },
+    "repeated-characters": {
+      en: "Please remove repeated characters.",
+      fi: "Poista toistuvat merkit.",
+    },
+    link: {
+      en: "Links are not accepted. Describe the issue in your own words; the editor finds the sources.",
+      fi: "Linkkejä ei hyväksytä. Kuvaa asia omin sanoin; toimittaja etsii lähteet.",
+    },
+    "contact-details": {
+      en: "Please remove email addresses and phone numbers. We never need your contact details.",
+      fi: "Poista sähköpostiosoitteet ja puhelinnumerot. Emme tarvitse yhteystietojasi.",
+    },
+    duplicate: {
+      en: "This question is already in the queue. You can support the existing one instead.",
+      fi: "Tämä kysymys on jo jonossa. Voit tukea olemassa olevaa kysymystä.",
+    },
+    "too-fast": {
+      en: "Please wait a moment before sending another question.",
+      fi: "Odota hetki ennen seuraavan kysymyksen lähettämistä.",
+    },
+    "too-many": {
+      en: `You can send ${QUESTION_LIMITS.perWindow} questions per 10 minutes from this browser. Please try again later.`,
+      fi: `Tästä selaimesta voi lähettää ${QUESTION_LIMITS.perWindow} kysymystä 10 minuutissa. Yritä myöhemmin uudelleen.`,
+    },
+  };
   const [storageError, setStorageError] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [correctionId, setCorrectionId] = useState("");
@@ -477,9 +523,21 @@ export default function App() {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const text = String(data.get("question") || "").trim();
-    if (!text) return;
+    const now = Date.now();
+    const rejection = checkQuestion(
+      text,
+      state.questions,
+      state.submittedAt,
+      now,
+    );
+    setQuestionError(rejection);
+    if (rejection) return;
     setState((s) => ({
       ...s,
+      submittedAt: [
+        ...s.submittedAt.filter((at) => now - at < QUESTION_LIMITS.windowMs),
+        now,
+      ],
       questions: [
         ...s.questions,
         {
@@ -2036,6 +2094,20 @@ export default function App() {
                 "Simuloitu AI-työ. Toimivat tarkistusportit. Kaikki tieto pysyy tässä selaimessa.",
               )}
             </p>
+            <div className="sim-notice" role="note">
+              <strong>
+                {t(
+                  "Newsroom simulation, open to anyone with the link",
+                  "Toimitussimulaatio, avoin kaikille, joilla on linkki",
+                )}
+              </strong>
+              <p>
+                {t(
+                  "There is no sign-in. Everything you select, approve or publish here is stored only in this browser and never reaches other readers or Kaleva. The only server-side protection is the editor access code for the paid AI step. A real newsroom would need individual editor accounts and server-checked publishing.",
+                  "Sisäänkirjautumista ei ole. Kaikki täällä valittu, hyväksytty tai julkaistu tallentuu vain tähän selaimeen eikä näy muille lukijoille tai Kalevalle. Ainoa palvelimen suojaus on toimittajan pääsykoodi maksulliseen AI-vaiheeseen. Oikea toimitus tarvitsisi henkilökohtaiset toimittajatunnukset ja palvelimen tarkistaman julkaisun.",
+                )}
+              </p>
+            </div>
           </section>
           <div className="workflow-strip">
             {[
@@ -2850,18 +2922,26 @@ export default function App() {
                 autoFocus
                 name="question"
                 required
-                minLength={8}
-                maxLength={500}
+                minLength={QUESTION_LIMITS.min}
+                maxLength={QUESTION_LIMITS.max}
+                aria-invalid={questionError ? true : undefined}
+                aria-describedby={questionError ? "question-error" : undefined}
+                onInput={() => setQuestionError(null)}
                 placeholder={t(
                   "What is missing from the local conversation?",
                   "Mitä paikallisesta keskustelusta puuttuu?",
                 )}
               />
             </label>
+            {questionError && (
+              <p className="form-error" id="question-error" role="alert">
+                {c(rejectionText[questionError])}
+              </p>
+            )}
             <p className="privacy-note">
               {t(
-                "Do not include names, contact details or sensitive personal information.",
-                "Älä lisää nimiä, yhteystietoja tai arkaluonteisia henkilötietoja.",
+                "Do not include names, contact details or sensitive personal information. Length, links, contact details, duplicates and sending speed are checked in this browser only: a demo safeguard, not server-side protection.",
+                "Älä lisää nimiä, yhteystietoja tai arkaluonteisia henkilötietoja. Pituus, linkit, yhteystiedot, kaksoiskappaleet ja lähetystahti tarkistetaan vain tässä selaimessa: demon suoja, ei palvelimen suojausta.",
               )}
             </p>
             <button className="primary full" type="submit">

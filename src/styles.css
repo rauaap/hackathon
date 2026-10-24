@@ -3205,3 +3205,34 @@ select {
 .radar-link {
   margin-top: 8px;
 }
+
+/* Hylätyn kysymyksen syy näkyy lomakkeessa. */
+.form-error {
+  border-left: 3px solid var(--orange);
+  background: #fbefe9;
+  color: #8a2e12;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0 10px;
+}
+
+/* Toimitusdemo erottuu lukijanäkymästä: kerrotaan suoraan, ettei sivu ole suojattu. */
+.sim-notice {
+  margin-top: 16px;
+  border: 1px solid #e3c7b9;
+  border-left: 4px solid var(--orange);
+  background: #fdf5f1;
+  padding: 12px 14px;
+  max-width: 76ch;
+}
+.sim-notice strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.sim-notice p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}

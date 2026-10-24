@@ -238,6 +238,67 @@ export type Question = {
   // Toimituksen vaihe tässä selaimessa. Julkaisu päätellään jutuista.
   status?: "review" | "investigating";
 };
+// Selaimen omat roskapostitarkistukset. Ne ohjaavat rehellistä käyttäjää, mutta eivät ole
+// tietoturvaa: jaettu versio tarvitsee samat ja tiukemmat tarkistukset palvelimella (SECURITY.md).
+export const QUESTION_LIMITS = {
+  min: 15,
+  max: 400,
+  perWindow: 3,
+  windowMs: 10 * 60_000,
+  gapMs: 20_000,
+};
+export type QuestionRejection =
+  | "too-short"
+  | "too-long"
+  | "no-words"
+  | "repeated-characters"
+  | "link"
+  | "contact-details"
+  | "duplicate"
+  | "too-fast"
+  | "too-many";
+const normalizeText = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+export function checkQuestion(
+  text: string,
+  questions: Question[],
+  submittedAt: number[],
+  now: number,
+): QuestionRejection | null {
+  const value = text.trim();
+  if (value.length < QUESTION_LIMITS.min) return "too-short";
+  if (value.length > QUESTION_LIMITS.max) return "too-long";
+  if ((value.match(/\p{L}{2,}/gu) ?? []).length < 3) return "no-words";
+  if (/(.)\1{5,}/u.test(value)) return "repeated-characters";
+  // Yhteystietoja ei tarvita, joten niitä ei tallenneta.
+  if (
+    /[\w.+-]+@[\w-]+\.[\w.]+/.test(value) ||
+    /(?:\+\d{1,3}|\b0)[\s-]?\d{1,4}(?:[\s-]?\d){5,}/.test(value)
+  )
+    return "contact-details";
+  if (
+    /https?:\/\/|www\.|\b[\w-]+\.(com|fi|net|org|io|ru|ly|xyz)\b/i.test(value)
+  )
+    return "link";
+  const normalized = normalizeText(value);
+  if (
+    questions.some(
+      (q) =>
+        normalizeText(q.text.en) === normalized ||
+        normalizeText(q.text.fi) === normalized,
+    )
+  )
+    return "duplicate";
+  const recent = submittedAt.filter(
+    (at) => now - at < QUESTION_LIMITS.windowMs,
+  );
+  if (recent.length >= QUESTION_LIMITS.perWindow) return "too-many";
+  if (recent.some((at) => now - at < QUESTION_LIMITS.gapMs)) return "too-fast";
+  return null;
+}
 export type QuestionStatus =
   "submitted" | "review" | "investigating" | "published";
 // Kysymyksen tila Community Radarissa: julkaistu vain, jos hyväksytty juttu vastaa siihen.
@@ -366,6 +427,8 @@ export type DemoState = {
   interests: number;
   pilotInterests: { organisation: string; note: string }[];
   checkoutIntents: number;
+  // Lähetysajat tässä selaimessa nopeusrajoitusta varten.
+  submittedAt: number[];
 };
 export function initialState(): DemoState {
   return {
@@ -435,6 +498,7 @@ export function initialState(): DemoState {
     interests: 0,
     pilotInterests: [],
     checkoutIntents: 0,
+    submittedAt: [],
   };
 }
 // v2: pääjuttu vaihtui eVaka-tiedotteeseen, joten vanhaa kyselyluonnosta ei ladata.
@@ -451,7 +515,13 @@ export function loadState(): DemoState {
         s.draft &&
         s.mainBody
       )
-        return { ...initialState(), ...s };
+        return {
+          ...initialState(),
+          ...s,
+          submittedAt: Array.isArray(s.submittedAt)
+            ? s.submittedAt.filter((x: unknown) => typeof x === "number")
+            : [],
+        };
     }
   } catch {
     /* Fresh state if storage is unavailable or corrupt. */

@@ -5,6 +5,7 @@ import type {
   NewsItem,
   NewsResponse,
   Reason,
+  MatchContext,
   TopicId,
 } from "../api/news.ts";
 import type { Group, Lang, SourceLead } from "./data";
@@ -151,18 +152,29 @@ export default function NewsFeed({
         .slice(0, 3)
         .map((w) => `“${w}”`)
         .join(", ");
+    const where = (context: MatchContext) =>
+      context === "summary-only"
+        ? t(" · feed summary only", " · vain syötekuvauksessa")
+        : context === "mention-only"
+          ? t(
+              " · police mentioned, no incident word",
+              " · poliisi mainitaan, ei tapahtumasanaa",
+            )
+          : "";
     if (r.type === "topic")
-      return `${topicNames[r.topic][lang]} ${points(r.points)} · ${t("matched", "osuma")} ${words(r.matched)}`;
+      return `${topicNames[r.topic][lang]} ${points(r.points)} · ${t("matched", "osuma")} ${words(r.matched)}${where(r.context)}`;
     if (r.type === "locality")
-      return r.level === "none"
-        ? `${t("No Oulu-area place named", "Oulun aluetta ei mainita")} ${points(r.points)}`
+      return r.level === "uncertain"
+        ? `${t("Location not stated in headline or summary", "Paikkaa ei mainita otsikossa eikä kuvauksessa")} ${points(r.points)}`
         : `${
             {
               oulu: t("Oulu", "Oulu"),
               region: t("Oulu region", "Oulun seutu"),
               elsewhere: t("Elsewhere in Finland", "Muualla Suomessa"),
+              national: t("National story", "Valtakunnallinen juttu"),
+              international: t("International story", "Kansainvälinen juttu"),
             }[r.level]
-          } ${points(r.points)} · ${t("matched", "osuma")} ${words(r.matched)}`;
+          } ${points(r.points)} · ${t("matched", "osuma")} ${words(r.matched)}${where(r.context)}`;
     if (r.type === "recency")
       return `${t("Recency", "Tuoreus")} ${points(r.points)} · ${t(`${r.hours} h old`, `${r.hours} t vanha`)}`;
     return `${kindNames[r.kind]?.[lang] ?? r.kind} ${points(r.points)}`;
@@ -185,6 +197,17 @@ export default function NewsFeed({
             </span>
           )}
           {kind && <span className="badge">{kind[lang]}</span>}
+          {item.confidence === "uncertain" && (
+            <span
+              className="badge"
+              title={t(
+                "The headline and feed summary do not say enough to classify this story reliably.",
+                "Otsikko ja syötekuvaus eivät riitä jutun luotettavaan luokitteluun.",
+              )}
+            >
+              {t("Uncertain match", "Epävarma luokitus")}
+            </span>
+          )}
         </div>
         <h3 lang="fi">
           <a href={item.url} target="_blank" rel="noreferrer">
@@ -416,8 +439,8 @@ export default function NewsFeed({
           </p>
           <p>
             {t(
-              "Ranking is rule-based, not AI: Finnish keyword stems in each headline and Kaleva’s feed description, place names (Oulu and the Oulu region rank higher; other towns, or no Oulu-area place at all, rank lower), recency and story type. Topic weights per audience are our demo assumptions, not measured reader data. The feed has no categories of its own, so topics are derived and can be wrong. We do not read article text, translate it or bypass any paywall. Nothing here is sent to Kaleva.",
-              "Järjestys perustuu sääntöihin, ei tekoälyyn: suomenkieliset avainsanat otsikossa ja Kalevan syötekuvauksessa, paikannimet (Oulu ja Oulun seutu nostavat, muut paikkakunnat tai Oulun alueen puuttuminen laskevat), tuoreus ja jutun tyyppi. Aiheiden painot ovat demon oletuksia, eivät mitattua lukijatietoa. Syötteessä ei ole omia luokkia, joten aiheet on päätelty ja voivat olla väärin. Emme lue artikkelien tekstiä, käännä sitä tai kierrä maksumuuria. Mitään ei lähetetä Kalevalle.",
+              "Ranking is rule-based, not AI: Finnish keyword stems in each headline and Kaleva’s feed description, place names (Oulu and the Oulu region rank higher; other towns, national and international stories rank lower), recency and story type. Matches only in Kaleva’s feed summary count half, and a police mention without an incident word is not treated as a safety story. When the headline and summary say too little, the story is marked “Uncertain match”. Topic weights per audience are our demo assumptions, not measured reader data. The feed has no categories of its own, so topics are derived and can be wrong. We do not read article text, translate it or bypass any paywall. Nothing here is sent to Kaleva.",
+              "Järjestys perustuu sääntöihin, ei tekoälyyn: suomenkieliset avainsanat otsikossa ja Kalevan syötekuvauksessa, paikannimet (Oulu ja Oulun seutu nostavat; muut paikkakunnat, valtakunnalliset ja kansainväliset jutut laskevat), tuoreus ja jutun tyyppi. Pelkästä syötekuvauksesta löytynyt osuma painaa puolet, eikä poliisin maininta ilman tapahtumasanaa tee jutusta turvallisuusuutista. Jos otsikko ja kuvaus kertovat liian vähän, juttu merkitään epävarmaksi. Aiheiden painot ovat demon oletuksia, eivät mitattua lukijatietoa. Syötteessä ei ole omia luokkia, joten aiheet on päätelty ja voivat olla väärin. Emme lue artikkelien tekstiä, käännä sitä tai kierrä maksumuuria. Mitään ei lähetetä Kalevalle.",
             )}
           </p>
           <a href={data.feed.url} target="_blank" rel="noreferrer">
