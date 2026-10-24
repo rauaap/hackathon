@@ -165,3 +165,18 @@ test("a backend auth or model failure returns an error and no draft", async () =
     assert.equal(body.error, "model_error");
   }
 });
+
+test("one feed read plus one backend wait fits inside the Vercel function limit", async () => {
+  const { BACKEND_TIMEOUT_MS, FEED_TIMEOUT_MS } =
+    await import("../api/news.ts");
+  const { readFileSync } = await import("node:fs");
+  const vercel = JSON.parse(
+    readFileSync(new URL("../vercel.json", import.meta.url), "utf8"),
+  );
+  const limitMs = vercel.functions["api/news.ts"].maxDuration * 1000;
+  // Marginaali vastauksen muodostamiselle.
+  assert.ok(
+    FEED_TIMEOUT_MS + BACKEND_TIMEOUT_MS <= limitMs - 5_000,
+    `${FEED_TIMEOUT_MS + BACKEND_TIMEOUT_MS} ms vs ${limitMs} ms`,
+  );
+});
