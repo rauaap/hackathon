@@ -55,7 +55,7 @@ import NewsFeed from "./NewsFeed";
 import AssistantPanel from "./AssistantPanel";
 import PresenterMode from "./PresenterMode";
 
-type View = "reader" | "offers" | "newsroom" | "presenter" | "notfound";
+type View = "reader" | "offers" | "newsroom" | "presenter" | "ai" | "notfound";
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, ReactNode> = {
     arrow: (
@@ -265,6 +265,7 @@ export default function App() {
       "#offers",
       "#newsroom",
       "#presenter",
+      "#ai",
       "#main-content",
     ].includes(location.hash)
       ? "notfound"
@@ -274,7 +275,9 @@ export default function App() {
           ? "newsroom"
           : location.hash === "#presenter"
             ? "presenter"
-            : "reader";
+            : location.hash === "#ai"
+              ? "ai"
+              : "reader";
   const [view, setView] = useState<View>(viewFromHash);
   const [modal, setModal] = useState<
     "question" | "checkout" | "error" | "reset" | null
@@ -368,9 +371,11 @@ export default function App() {
           ? t("Newsroom demo", "Toimitusdemo")
           : view === "presenter"
             ? t("Presenter Mode", "Esittäjänäkymä")
-            : view === "notfound"
-              ? t("Page not found", "Sivua ei löytynyt")
-              : t("Oulu, explained", "Oulu, ymmärrettävästi");
+            : view === "ai"
+              ? t("AI transparency", "Tekoälyn käyttö")
+              : view === "notfound"
+                ? t("Page not found", "Sivua ei löytynyt")
+                : t("Oulu, explained", "Oulu, ymmärrettävästi");
     document.title = `${pageTitle} | Kaleva Local`;
     document
       .querySelector('meta[name="description"]')
@@ -1434,6 +1439,222 @@ export default function App() {
             exit: () => navigate("reader"),
           }}
         />
+      ) : view === "ai" ? (
+        <main className="wrap ai-view">
+          <section className="page-heading">
+            <span className="eyebrow">
+              {t("AI TRANSPARENCY", "TEKOÄLYN KÄYTTÖ")}
+            </span>
+            <h1>{t("How we use AI.", "Miten käytämme tekoälyä.")}</h1>
+            <p>
+              {t(
+                "Where AI is used in Kaleva Local, what is rule-based or prepared in advance, and what a person checks before anything is published. Checked against the implementation on 24 Oct 2026.",
+                "Missä Kaleva Local käyttää tekoälyä, mikä on sääntöpohjaista tai valmiiksi tehtyä ja mitä ihminen tarkistaa ennen julkaisua. Tarkistettu toteutusta vasten 24.10.2026.",
+              )}
+            </p>
+          </section>
+          <div className="ai-legend" aria-label={t("Labels", "Merkinnät")}>
+            <span className="badge green">
+              {t("Implemented", "Toteutettu")}
+            </span>
+            <span className="badge">{t("Simulated", "Simuloitu")}</span>
+            <span className="badge planned">
+              {t("Planned", "Suunnitteilla")}
+            </span>
+          </div>
+          <section className="ai-section">
+            <h2>{t("1. AI in the news workflow", "1. Tekoäly uutistyössä")}</h2>
+            <ul>
+              <li>
+                <span className="badge green">
+                  {t("Implemented", "Toteutettu")}
+                </span>
+                <span>
+                  <strong>{t("What it reads:", "Mitä se lukee:")}</strong>{" "}
+                  {t(
+                    "one item from Kaleva’s free RSS feed, meaning the Finnish headline and the short feed description. It does not see the full article. Notes from Kaleva’s English articles from 2012 guide phrasing only, never facts.",
+                    "yhden jutun Kalevan maksuttomasta RSS-syötteestä eli suomenkielisen otsikon ja lyhyen syötekuvauksen. Koko artikkelia se ei näe. Kalevan vuoden 2012 englanninkielisistä jutuista tehdyt muistiinpanot ohjaavat vain sanamuotoja, eivät tietosisältöä.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge green">
+                  {t("Implemented", "Toteutettu")}
+                </span>
+                <span>
+                  <strong>{t("What it produces:", "Mitä se tuottaa:")}</strong>{" "}
+                  {t(
+                    "an unpublished draft: an English translation of the headline and description, topics, likely relevance for students and families, missing information and claims the source does not support. The server compares the draft with the source and shows warnings.",
+                    "julkaisemattoman luonnoksen: otsikon ja kuvauksen englanninkielisen käännöksen, aiheet, arvion merkityksestä opiskelijoille ja perheille, puuttuvat tiedot sekä väitteet, joita lähde ei tue. Palvelin vertaa luonnosta lähteeseen ja näyttää varoitukset.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge green">
+                  {t("Implemented", "Toteutettu")}
+                </span>
+                <span>
+                  <strong>{t("How it runs:", "Miten se toimii:")}</strong>{" "}
+                  {t(
+                    "Claude (claude-opus-5-5) through the team’s Agent SDK server. Only an editor with the access code can start it, and calls are capped. One real end-to-end generation has succeeded (24 Oct 2026). That is one test, not proven translation quality.",
+                    "Claude (claude-opus-5-5) tiimin Agent SDK -palvelimen kautta. Vain pääsykoodin tietävä toimittaja voi käynnistää sen, ja kutsujen määrä on rajattu. Yksi oikea generointi alusta loppuun on onnistunut (24.10.2026). Se on yksi testi, ei näyttö käännösten laadusta.",
+                  )}
+                </span>
+              </li>
+            </ul>
+          </section>
+          <section className="ai-section">
+            <h2>
+              {t(
+                "2. Rule-based or prepared in advance",
+                "2. Sääntöpohjaista tai valmiiksi tehtyä",
+              )}
+            </h2>
+            <ul>
+              <li>
+                <span className="badge green">
+                  {t("Implemented", "Toteutettu")}
+                </span>
+                <span>
+                  {t(
+                    "News ranking uses fixed rules (keywords, place names, recency), not AI. Every story shows why it ranks where it does.",
+                    "Uutisten järjestys perustuu kiinteisiin sääntöihin (avainsanat, paikannimet, tuoreus), ei tekoälyyn. Jokainen juttu näyttää, miksi se on listalla siinä kohdassa.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge green">
+                  {t("Implemented", "Toteutettu")}
+                </span>
+                <span>
+                  {t(
+                    "Community Radar question checks (length, links, contact details, duplicates) are rules that run in your browser.",
+                    "Community Radarin kysymystarkistukset (pituus, linkit, yhteystiedot, kaksoiskappaleet) ovat selaimessa toimivia sääntöjä.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge">{t("Simulated", "Simuloitu")}</span>
+                <span>
+                  {t(
+                    "The eVaka demo draft, in English and Finnish, was written by the team in advance. It is not output from the AI assistant.",
+                    "eVaka-demon luonnos englanniksi ja suomeksi on tiimin etukäteen kirjoittama. Se ei ole tekoälyavustajan tuottama.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge">{t("Simulated", "Simuloitu")}</span>
+                <span>
+                  {t(
+                    "The sample questions, the parent who asks and the editor Alex North are fictional. Supports, statuses and publications are stored only in this browser.",
+                    "Esimerkkikysymykset, kysymyksen esittänyt vanhempi ja toimittaja Alex North ovat kuvitteellisia. Tuet, tilat ja julkaisut tallentuvat vain tähän selaimeen.",
+                  )}
+                </span>
+              </li>
+            </ul>
+          </section>
+          <section className="ai-section">
+            <h2>
+              {t(
+                "3. What a person checks before publishing",
+                "3. Mitä ihminen tarkistaa ennen julkaisua",
+              )}
+            </h2>
+            <ul>
+              <li>
+                <span className="badge green">
+                  {t("Implemented", "Toteutettu")}
+                </span>
+                <span>
+                  {t(
+                    "Approval stays blocked while the draft has an unsupported claim or an [EDITOR] placeholder.",
+                    "Hyväksyntä on estetty niin kauan kuin luonnoksessa on lähteen tukematon väite tai [TOIMITTAJA]-paikkamerkki.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge green">
+                  {t("Implemented", "Toteutettu")}
+                </span>
+                <span>
+                  {t(
+                    "The editor must tick both a fact review and a language review, then approve that exact version. Any edit cancels the approval. Nothing is published automatically.",
+                    "Toimittajan on merkittävä sekä faktojen että kielen tarkistus ja hyväksyttävä juuri se versio. Jokainen muokkaus kumoaa hyväksynnän. Mitään ei julkaista automaattisesti.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge">{t("Simulated", "Simuloitu")}</span>
+                <span>
+                  {t(
+                    "In this demo the checks run in the browser and the editor is fictional. Kaleva journalists have not reviewed anything here.",
+                    "Tässä demossa tarkistukset tehdään selaimessa ja toimittaja on kuvitteellinen. Kalevan toimittajat eivät ole tarkistaneet tämän sivuston sisältöä.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span className="badge planned">
+                  {t("Planned", "Suunnitteilla")}
+                </span>
+                <span>
+                  {t(
+                    "For a real pilot: Kaleva’s permission for AI processing, personal editor accounts, publishing checked on the server, and a wider test of translation quality.",
+                    "Oikeaa pilottia varten: Kalevan lupa tekoälykäsittelyyn, henkilökohtaiset toimittajatunnukset, palvelimella tarkistettu julkaisu ja laajempi käännösten laadun testi.",
+                  )}
+                </span>
+              </li>
+            </ul>
+          </section>
+          <section className="ai-section">
+            <h2>
+              {t(
+                "4. How AI helped build this project",
+                "4. Miten tekoäly auttoi projektin tekemisessä",
+              )}
+            </h2>
+            <ul>
+              <li>
+                <span>
+                  <strong>{t("Planning:", "Suunnittelu:")}</strong>{" "}
+                  {t(
+                    "the team used ChatGPT for ideas and planning.",
+                    "tiimi käytti ChatGPT:tä ideointiin ja suunnitteluun.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span>
+                  <strong>{t("Programming:", "Ohjelmointi:")}</strong>{" "}
+                  {t(
+                    "most of the app’s code and interface text was written with Claude Code (Claude Opus 5.5), which is credited as co-author in the commits. The team also used other AI coding assistants, including for the Agent SDK server.",
+                    "suurin osa sovelluksen koodista ja käyttöliittymäteksteistä tehtiin Claude Codella (Claude Opus 5.5), joka on merkitty commiteissa toiseksi tekijäksi. Tiimi käytti myös muita tekoälyavusteisia ohjelmointityökaluja, myös Agent SDK -palvelimen tekemisessä.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span>
+                  <strong>{t("Materials:", "Materiaalit:")}</strong>{" "}
+                  {t(
+                    "the pitch decks and the pitch script were made with AI help.",
+                    "pitch-esitykset ja puheen käsikirjoitus tehtiin tekoälyn avulla.",
+                  )}
+                </span>
+              </li>
+              <li>
+                <span>
+                  <strong>{t("Responsibility:", "Vastuu:")}</strong>{" "}
+                  {t(
+                    "the team made the product decisions and is responsible for the content. Code changes are checked with automated tests.",
+                    "tiimi teki tuotepäätökset ja vastaa sisällöstä. Koodimuutokset tarkistetaan automaattisilla testeillä.",
+                  )}
+                </span>
+              </li>
+            </ul>
+          </section>
+          <button className="primary" onClick={() => navigate("reader")}>
+            {t("Back to Oulu", "Takaisin Ouluun")}
+          </button>
+        </main>
       ) : view === "notfound" ? (
         <main className="wrap page-heading not-found">
           <span className="eyebrow">404</span>
@@ -3133,6 +3354,9 @@ export default function App() {
                 "Riippumaton hackathon-konsepti · Oulu · 2026",
               )}
             </span>
+            <button className="text-button" onClick={() => navigate("ai")}>
+              {t("AI transparency", "Tekoälyn käyttö")}
+            </button>
             <span>
               {t(
                 "Local to this browser. No payments. No messages sent.",
