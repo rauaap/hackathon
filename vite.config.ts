@@ -31,7 +31,12 @@ function localSources(): Plugin {
               response = await handlers.POST(
                 new Request(`http://localhost${path}`, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: {
+                    "Content-Type": "application/json",
+                    ...(req.headers.authorization
+                      ? { Authorization: req.headers.authorization }
+                      : {}),
+                  },
                   body: Buffer.concat(chunks),
                 }),
               );
@@ -61,7 +66,12 @@ function localSources(): Plugin {
 export default defineConfig(({ mode }) => {
   // Avain luetaan .env.local-tiedostosta vain palvelimen prosessiin; ilman VITE_-etuliitettä se ei päädy selaimeen.
   const env = loadEnv(mode, process.cwd(), "");
-  for (const key of ["ANTHROPIC_API_KEY", "ASSISTANT_MAX_CALLS_PER_HOUR"])
+  for (const key of [
+    "ANTHROPIC_API_KEY",
+    "NEWSROOM_ACCESS_CODE",
+    "ASSISTANT_MAX_CALLS_PER_HOUR",
+    "ASSISTANT_MAX_CALLS_PER_DAY",
+  ])
     if (env[key] && !process.env[key]) process.env[key] = env[key];
   return { plugins: [react(), localSources()] };
 });

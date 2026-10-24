@@ -10,7 +10,27 @@ type Failure =
   | "truncated"
   | "invalid_output"
   | "model_error"
-  | "network";
+  | "network"
+  | "unauthorized"
+  | "locked"
+  | "busy";
+// Pääsykoodi säilyy vain tämän välilehden istunnossa, ei pysyvästi selaimessa.
+const CODE_KEY = "kaleva-local-editor-code";
+const readCode = () => {
+  try {
+    return sessionStorage.getItem(CODE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+};
+const writeCode = (value: string) => {
+  try {
+    if (value) sessionStorage.setItem(CODE_KEY, value);
+    else sessionStorage.removeItem(CODE_KEY);
+  } catch {
+    /* Ilman istuntotallennusta koodi pitää syöttää uudelleen. */
+  }
+};
 
 // Kalevan juttunumero osoitteen lopusta; sama tunniste kuin palvelimen syötteessä.
 export const leadId = (lead: SourceLead) => {
@@ -46,6 +66,7 @@ export default function AssistantPanel({
     cachedAvailability() === false ? "unavailable" : null,
   );
   const pending = useRef(false);
+  const [code, setCode] = useState(readCode);
   const id = leadId(lead);
   async function run() {
     if (pending.current || !id) return;
@@ -55,13 +76,21 @@ export default function AssistantPanel({
     try {
       const response = await fetch("/api/news", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${code.trim()}`,
+        },
         body: JSON.stringify({ id }),
         signal: AbortSignal.timeout(60000),
       });
       const data = await response.json().catch(() => ({}));
-      if (response.ok && data.draft) onDraft(data.draft, !!data.cached);
-      else setFailure((data.error as Failure) || "model_error");
+      if (response.ok && data.draft) {
+        writeCode(code.trim());
+        onDraft(data.draft, !!data.cached);
+      } else {
+        if (data.error === "unauthorized") writeCode("");
+        setFailure((data.error as Failure) || "model_error");
+      }
     } catch {
       setFailure("network");
     } finally {
@@ -71,12 +100,24 @@ export default function AssistantPanel({
   }
   const messages: Record<Failure, string> = {
     unavailable: t(
-      "AI assistant unavailable: no LLM API key is configured on the server. Nothing is generated or simulated. Continue with the manual brief below.",
-      "AI-avustaja ei ole käytettävissä: palvelimelle ei ole määritetty kielimallin API-avainta. Mitään ei tuoteta eikä simuloida. Jatka alla olevalla käsin tehtävällä pohjalla.",
+      "AI assistant unavailable: the server has no LLM API key or editor access code configured. Nothing is generated or simulated. Continue with the manual brief below.",
+      "AI-avustaja ei ole käytettävissä: palvelimelle ei ole määritetty kielimallin API-avainta tai toimituksen pääsykoodia. Mitään ei tuoteta eikä simuloida. Jatka alla olevalla käsin tehtävällä pohjalla.",
+    ),
+    unauthorized: t(
+      "The editor access code was not accepted.",
+      "Toimituksen pääsykoodia ei hyväksytty.",
+    ),
+    locked: t(
+      "Too many wrong access codes. The assistant is locked for a few minutes.",
+      "Liian monta väärää pääsykoodia. Avustaja on lukittu muutamaksi minuutiksi.",
+    ),
+    busy: t(
+      "The assistant is already handling other requests. Try again in a moment.",
+      "Avustaja käsittelee jo muita pyyntöjä. Yritä hetken päästä uudelleen.",
     ),
     budget: t(
-      "The server’s hourly AI budget is used up. Try later or continue manually.",
-      "Palvelimen tuntikohtainen AI-kiintiö on käytetty. Yritä myöhemmin tai jatka käsin.",
+      "The server’s AI budget for this hour or day is used up. Try later or continue manually.",
+      "Palvelimen tunti- tai päiväkohtainen AI-kiintiö on käytetty. Yritä myöhemmin tai jatka käsin.",
     ),
     not_in_feed: t(
       "This story is no longer in Kaleva’s current feed. The assistant only works on stories it can re-read from the feed itself.",
@@ -137,10 +178,27 @@ export default function AssistantPanel({
           "Lähettää Claudelle vain tämän jutun suomenkielisen otsikon ja Kalevan syötekuvauksen, jotka palvelin lukee uudelleen syötteestä. Vastauksena tulee englanninkielinen käännös, arvio merkityksestä ja lista siitä, mitä lähde ei kerro. Malli ei näe koko juttua. Tulos on julkaisematon luonnos, joka vaatii molemmat ihmistarkistukset.",
         )}
       </p>
+      {!existing && failure !== "unavailable" && (
+        <label className="assistant-code">
+          {t("Editor access code", "Toimituksen pääsykoodi")}
+          <input
+            type="password"
+            autoComplete="off"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
+          <small>
+            {t(
+              "Only newsroom editors can run the paid AI step. The code is kept for this browser tab only.",
+              "Maksullista AI-vaihetta voivat käyttää vain toimittajat. Koodi säilyy vain tässä välilehdessä.",
+            )}
+          </small>
+        </label>
+      )}
       {!existing && (
         <button
           className="secondary"
-          disabled={busy || !id || failure === "unavailable"}
+          disabled={busy || !id || failure === "unavailable" || !code.trim()}
           onClick={run}
         >
           {busy

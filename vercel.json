@@ -16,5 +16,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/news.ts": {
+      "maxDuration": 60
+    }
+  }
 }
