@@ -1,5 +1,6 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import type Anthropic from "@anthropic-ai/sdk";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 // Kalevan maksuttomien sisältöjen RSS. Syöte ei sisällä <category>-kenttiä eikä artikkelitekstiä.
 export const FEED_URL =
@@ -51,7 +52,11 @@ export type NewsResponse = {
   fetchedAt: string;
   servedAt: string;
   method: string;
-  assistant: { available: boolean; model: string };
+  assistant: {
+    available: boolean;
+    model: string;
+    reason: "no_api_key" | "no_access_code" | null;
+  };
   items: NewsItem[];
 };
 type Normalized = Omit<NewsItem, "topics" | "locality" | "relevance">;
@@ -544,7 +549,11 @@ export async function GET() {
     servedAt: new Date(now).toISOString(),
     method:
       "rules-v1: Finnish keyword stems in headline and feed description, Oulu/region place names, recency and item type. No AI model.",
-    assistant: { available: assistantAvailable(), model: ASSISTANT_MODEL },
+    assistant: {
+      available: assistantAvailable(),
+      model: ASSISTANT_MODEL,
+      reason: assistantReason(),
+    },
     items: cache.feed.items.map((item) => classify(item, new Date(now))),
   };
   return json(
@@ -652,8 +661,25 @@ let sdkClient: AssistClient | null = null;
 export function setAssistantClient(client: AssistClient | null) {
   clientOverride = client;
 }
+// Avustaja on käytössä vain, kun sekä API-avain että toimituksen pääsykoodi on määritetty (fail closed).
+const MIN_CODE_LENGTH = 24;
+const accessCode = () => process.env.NEWSROOM_ACCESS_CODE ?? "";
+function assistantReason(): "no_api_key" | "no_access_code" | null {
+  if (!clientOverride && !process.env.ANTHROPIC_API_KEY) return "no_api_key";
+  if (accessCode().length < MIN_CODE_LENGTH) return "no_access_code";
+  return null;
+}
 export function assistantAvailable() {
-  return !!clientOverride || !!process.env.ANTHROPIC_API_KEY;
+  return assistantReason() === null;
+}
+// Vakioaikainen vertailu tiivisteillä, jotta pituus tai sisältö ei vuoda ajoituksesta.
+function authorized(request: Request) {
+  const given =
+    request.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1] ?? "";
+  const digest = (v: string) => createHash("sha256").update(v).digest();
+  return (
+    given.length > 0 && timingSafeEqual(digest(given), digest(accessCode()))
+  );
 }
 async function assistantClient(): Promise<AssistClient> {
   if (clientOverride) return clientOverride;
@@ -671,15 +697,26 @@ async function assistantClient(): Promise<AssistClient> {
 const drafts = new Map<string, { at: number; draft: AssistDraft }>();
 const inFlight = new Map<string, Promise<AssistDraft>>();
 let calls: number[] = [];
+let failures: number[] = [];
 export function resetAssistant() {
   drafts.clear();
   inFlight.clear();
   calls = [];
+  failures = [];
 }
-const maxCallsPerHour = () =>
-  Math.max(0, Number(process.env.ASSISTANT_MAX_CALLS_PER_HOUR ?? 20) || 0);
+const limit = (name: string, fallback: number) => {
+  const v = Number(process.env[name] ?? fallback);
+  return Number.isFinite(v) && v >= 0 ? v : fallback;
+};
+// Oletusrajat yhtä palvelininstanssia kohti. Kova kokonaisraja asetetaan Anthropic Consolen kulurajalla.
+const maxCallsPerHour = () => limit("ASSISTANT_MAX_CALLS_PER_HOUR", 20);
+const maxCallsPerDay = () => limit("ASSISTANT_MAX_CALLS_PER_DAY", 60);
+const MAX_CONCURRENT = 3;
+const MAX_FAILURES = 10;
+const FAILURE_WINDOW_MS = 10 * 60 * 1000;
 
-type AssistErrorCode = "refusal" | "truncated" | "invalid_output" | "model_error";
+type AssistErrorCode =
+  "refusal" | "truncated" | "invalid_output" | "model_error";
 class AssistError extends Error {
   code: AssistErrorCode;
   constructor(code: AssistErrorCode, message: string) {
@@ -828,6 +865,14 @@ async function generate(item: Normalized): Promise<AssistDraft> {
 }
 
 export async function POST(request: Request) {
+  if (!assistantAvailable()) return json({ error: "unavailable" }, 503);
+  const now = Date.now();
+  failures = failures.filter((t) => now - t < FAILURE_WINDOW_MS);
+  if (failures.length >= MAX_FAILURES) return json({ error: "locked" }, 429);
+  if (!authorized(request)) {
+    failures.push(now);
+    return json({ error: "unauthorized" }, 401);
+  }
   let id: unknown;
   try {
     const text = await request.text();
@@ -838,8 +883,6 @@ export async function POST(request: Request) {
   }
   if (typeof id !== "string" || !/^kaleva-[\w/-]{1,200}$/.test(id))
     return json({ error: "bad_request" }, 400);
-  if (!assistantAvailable()) return json({ error: "unavailable" }, 503);
-  const now = Date.now();
   await getFeed(now);
   const item = cache?.feed.items.find((i) => i.id === id);
   if (!item) return json({ error: "not_in_feed" }, 404);
@@ -849,9 +892,13 @@ export async function POST(request: Request) {
     return json({ draft: hit.draft, cached: true });
   let pending = inFlight.get(key);
   if (!pending) {
-    calls = calls.filter((t) => now - t < 3.6e6);
-    if (calls.length >= maxCallsPerHour())
+    calls = calls.filter((t) => now - t < 24 * 3.6e6);
+    if (
+      calls.filter((t) => now - t < 3.6e6).length >= maxCallsPerHour() ||
+      calls.length >= maxCallsPerDay()
+    )
       return json({ error: "budget" }, 429);
+    if (inFlight.size >= MAX_CONCURRENT) return json({ error: "busy" }, 429);
     calls.push(now);
     pending = generate(item).finally(() => inFlight.delete(key));
     inFlight.set(key, pending);

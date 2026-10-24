@@ -36,8 +36,6 @@ const good: AssistOutput = {
   ],
 };
 const originalFetch = globalThis.fetch;
-const originalKey = process.env.ANTHROPIC_API_KEY;
-const originalBudget = process.env.ASSISTANT_MAX_CALLS_PER_HOUR;
 type Params = {
   model: string;
   messages: { content: string }[];
@@ -62,29 +60,37 @@ const ok = (output: unknown) => () => ({
   content: [{ type: "text", text: JSON.stringify(output) }],
   usage: { input_tokens: 420, output_tokens: 180 },
 });
-const post = (id: unknown) =>
+// Testin pääsykoodi; ei käytössä missään ympäristössä.
+const CODE = "test-access-code-0123456789abcdef";
+const post = (id: unknown, code: string | null = CODE) =>
   POST(
     new Request("http://x/api/news", {
       method: "POST",
+      headers: code === null ? {} : { Authorization: `Bearer ${code}` },
       body: JSON.stringify({ id }),
     }),
   );
+const ENV = [
+  "ANTHROPIC_API_KEY",
+  "NEWSROOM_ACCESS_CODE",
+  "ASSISTANT_MAX_CALLS_PER_HOUR",
+  "ASSISTANT_MAX_CALLS_PER_DAY",
+] as const;
+const savedEnv = Object.fromEntries(ENV.map((k) => [k, process.env[k]]));
 beforeEach(() => {
   resetNewsCache();
   resetAssistant();
   setAssistantClient(null);
-  delete process.env.ANTHROPIC_API_KEY;
-  delete process.env.ASSISTANT_MAX_CALLS_PER_HOUR;
+  for (const k of ENV) delete process.env[k];
+  process.env.NEWSROOM_ACCESS_CODE = CODE;
   globalThis.fetch = async () => new Response(feed);
 });
 afterEach(() => {
   globalThis.fetch = originalFetch;
   setAssistantClient(null);
-  if (originalKey === undefined) delete process.env.ANTHROPIC_API_KEY;
-  else process.env.ANTHROPIC_API_KEY = originalKey;
-  if (originalBudget === undefined)
-    delete process.env.ASSISTANT_MAX_CALLS_PER_HOUR;
-  else process.env.ASSISTANT_MAX_CALLS_PER_HOUR = originalBudget;
+  for (const k of ENV)
+    if (savedEnv[k] === undefined) delete process.env[k];
+    else process.env[k] = savedEnv[k];
 });
 
 test("without credentials the assistant is reported unavailable and nothing is generated", async () => {
@@ -220,8 +226,15 @@ test("unknown or malformed ids never reach the model", async () => {
   assert.equal((await post("kaleva-99999999")).status, 404);
   assert.equal((await post("../etc")).status, 400);
   assert.equal(
-    (await POST(new Request("http://x", { method: "POST", body: "not json" })))
-      .status,
+    (
+      await POST(
+        new Request("http://x", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${CODE}` },
+          body: "not json",
+        }),
+      )
+    ).status,
     400,
   );
   assert.equal(sent.length, 0);
@@ -314,4 +327,100 @@ test("assistant does not run when Kaleva's feed is unreachable and nothing is ca
   globalThis.fetch = async () => new Response("down", { status: 503 });
   assert.equal((await post("kaleva-13718839")).status, 404);
   assert.equal(sent.length, 0);
+});
+
+test("fails closed when the editor access code is missing or too short", async () => {
+  mock(ok(good));
+  for (const value of [undefined, "short-code"]) {
+    if (value === undefined) delete process.env.NEWSROOM_ACCESS_CODE;
+    else process.env.NEWSROOM_ACCESS_CODE = value;
+    const feedRes = await (await GET()).json();
+    assert.equal(feedRes.assistant.available, false);
+    assert.equal(feedRes.assistant.reason, "no_access_code");
+    const res = await post("kaleva-13718839", value ?? "");
+    assert.equal(res.status, 503);
+  }
+  assert.equal(sent.length, 0);
+});
+
+test("requests without the right access code are rejected before any feed or model work", async () => {
+  mock(ok(good));
+  let feedCalls = 0;
+  globalThis.fetch = async () => {
+    feedCalls++;
+    return new Response(feed);
+  };
+  for (const code of [null, "", "wrong-code-0123456789abcdefgh", `${CODE}x`]) {
+    const res = await post("kaleva-13718839", code);
+    assert.equal(res.status, 401);
+    assert.deepEqual(await res.json(), { error: "unauthorized" });
+  }
+  assert.equal(sent.length, 0);
+  assert.equal(feedCalls, 0);
+  assert.equal((await post("kaleva-13718839")).status, 200);
+});
+
+test("repeated wrong codes lock the endpoint, even for the right code, until the window passes", async () => {
+  mock(ok(good));
+  for (let i = 0; i < 10; i++)
+    assert.equal((await post("kaleva-13718839", "guess-" + i)).status, 401);
+  const locked = await post("kaleva-13718839");
+  assert.equal(locked.status, 429);
+  assert.deepEqual(await locked.json(), { error: "locked" });
+  assert.equal(sent.length, 0);
+  const realNow = Date.now;
+  Date.now = () => realNow() + 11 * 60 * 1000;
+  try {
+    assert.equal((await post("kaleva-13718839")).status, 200);
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test("daily cap applies across hours and limits are configurable", async () => {
+  process.env.ASSISTANT_MAX_CALLS_PER_DAY = "1";
+  process.env.ASSISTANT_MAX_CALLS_PER_HOUR = "5";
+  mock(ok({ ...good, headline_en: "Translated headline" }));
+  assert.equal((await post("kaleva-13718839")).status, 200);
+  const realNow = Date.now;
+  Date.now = () => realNow() + 2 * 3.6e6;
+  try {
+    const res = await post("kaleva-13721477");
+    assert.equal(res.status, 429);
+    assert.deepEqual(await res.json(), { error: "budget" });
+  } finally {
+    Date.now = realNow;
+  }
+  assert.equal(sent.length, 1);
+});
+
+test("no more than three different stories are generated at once", async () => {
+  const release: (() => void)[] = [];
+  sent = [];
+  setAssistantClient({
+    create: (p) =>
+      new Promise((resolve) => {
+        sent.push(p as never);
+        release.push(() => resolve(ok(good)() as never));
+      }),
+  });
+  const more = feed.replace(
+    "</channel>",
+    [1, 2, 3]
+      .map(
+        (n) =>
+          `<item><title>Juttu ${n}</title><link>https://www.kaleva.fi/j/1000000${n}</link><pubDate>Wed, 21 Oct 2026 12:40:00 +0000</pubDate><guid>https://www.kaleva.fi/linkki/1000000${n}</guid></item>`,
+      )
+      .join("") + "</channel>",
+  );
+  globalThis.fetch = async () => new Response(more);
+  const ids = ["kaleva-13718839", "kaleva-13722723", "kaleva-13721477"];
+  const running = ids.map((id) => post(id));
+  await new Promise((r) => setTimeout(r, 10));
+  const fourth = await post("kaleva-10000001");
+  assert.equal(fourth.status, 429);
+  assert.deepEqual(await fourth.json(), { error: "busy" });
+  release.forEach((r) => r());
+  for (const res of await Promise.all(running)) assert.equal(res.status, 200);
+  assert.equal(sent.length, 3);
 });

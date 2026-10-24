@@ -3077,3 +3077,11 @@ select {
 .feed-read {
   justify-self: start;
 }
+.assistant-code {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+}
+.assistant-code small {
+  color: var(--muted);
+}

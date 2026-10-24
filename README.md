@@ -46,10 +46,22 @@ Configuration (server only; never prefix with `VITE_`):
 ```sh
 # .env.local (gitignored) for local dev/preview, or Vercel project environment variables
 ANTHROPIC_API_KEY=...
+NEWSROOM_ACCESS_CODE=...          # required, at least 24 characters; editors enter it in the newsroom
 ASSISTANT_MAX_CALLS_PER_HOUR=20   # optional, default 20 per server instance
+ASSISTANT_MAX_CALLS_PER_DAY=60    # optional, default 60 per server instance
 ```
 
-Without a key, `GET /api/news` reports `assistant.available: false`, `POST` returns 503 and the desk shows a labelled “unavailable” state. Nothing is generated or simulated. Cost controls: only items currently in Kaleva's feed, one call per story per prompt version (24 h server cache plus a draft saved in the browser), concurrent duplicate requests merged, hourly call cap, `max_tokens` 4000, 45 s timeout with one retry. Cache and cap are per server instance.
+**Access control.** The generation endpoint fails closed. Without both a key and an access code of at least 24 characters, `GET /api/news` reports `assistant.available: false` with a `reason`, `POST` returns 503 and the desk shows a labelled “unavailable” state. Nothing is generated or simulated. Each `POST` must send `Authorization: Bearer <NEWSROOM_ACCESS_CODE>`, which is compared in constant time. A wrong or missing code returns 401 before any feed or model work. Ten failures within 10 minutes lock the endpoint (429) for that server instance. The editor types the code in the assistant panel, and it is kept in `sessionStorage` for that tab only.
+
+**Cost controls.**
+- Only items currently in Kaleva's feed can be processed.
+- One call per story per prompt version (24 h server cache plus a draft saved in the browser).
+- Concurrent duplicate requests are merged.
+- At most 3 different stories are generated at once.
+- Hourly and daily call caps.
+- `max_tokens` 4000, 45 s timeout with one retry, Vercel `maxDuration` 60 s.
+
+At the default caps the worst case is about 60 × (4,000 output × $20/M + ~1,500 input × $4/M) ≈ **$5 per server instance per day**. Caches, caps and lockout are per server instance. **For a hard global ceiling, also set a monthly spend limit for the API key's workspace in the Anthropic Console.**
 
 ### Deliberate boundaries
 
@@ -111,5 +123,7 @@ npx vercel --prod
 Choose the dedicated Kaleva Local project; do not select an unrelated existing application.
 
 Live demo: https://kaleva-local.vercel.app · source: https://github.com/rauaap/hackathon
+
+As checked on 24 October 2026, the Vercel project `kaleva-local` has **no Git integration**, so no production branch is configured. Pushes and merges do not deploy anything. Production changes only through `vercel deploy --prod` from a clean export of a commit.
 
 The current Vercel GitHub app connection cannot read this repository, so releases were deployed from the exact committed source files through the Vercel API. GitHub `main` is updated, but future pushes are **not automatically deployed** until the repository owner enables that Vercel Git integration.

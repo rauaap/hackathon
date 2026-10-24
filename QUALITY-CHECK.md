@@ -87,3 +87,15 @@ Browser artifacts are local and gitignored under `output/playwright/`. The code 
   - **Mocked server response (labelled TEST FIXTURE):** budget, refusal and network errors are recoverable; the draft is saved unpublished and persists across reload without a new call; approval is blocked until notes are resolved; both reviews are required; an edit invalidates approval; the exact approved title and body are published; the reader sees the AI disclosure, original Kaleva headline and link; the feed card links to the explanation; a reader follow-up appears linked in the queue; no overflow at 320/390.
   - axe: 0 violations in three new states.
 - Regression: the eVaka browser suite 12/12 and the RSS feed suite 11/11 pass again.
+
+## Production hardening for the demo (24 October 2026)
+
+- Generation endpoint secured as described in the README:
+  - fail-closed access code with Bearer header and constant-time comparison
+  - 401 before any feed or model work, lockout after 10 failures in 10 minutes
+  - hourly cap 20, daily cap 60, at most 3 concurrent generations, `maxDuration` 60 s
+- `NEWSROOM_ACCESS_CODE` (random, 43 characters) is set in Vercel **Production** as a secret; the local copy is in the gitignored `.env.local`. `ANTHROPIC_API_KEY` is **not** set anywhere, so the assistant stays unavailable.
+- Vercel project: framework Vite, Node 24.x, no Git integration, so there is no production branch. Production deploys only via the CLI.
+- `npm test` 26/26: 5 new tests covering missing or short code, 401 before work, lockout and recovery, daily cap and the concurrency cap.
+- Local browser checks: AI assistant 9/9 (code required, Bearer header sent, wrong code rejected and not stored, code kept only in `sessionStorage`), eVaka 12/12, feed 11/11; axe 0.
+- **Real Claude request: not performed.** No API key is configured; this is a blocker.
