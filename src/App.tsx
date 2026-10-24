@@ -45,6 +45,7 @@ import {
   type QuestionRejection,
   questionStatus,
   checkQuestion,
+  evakaInsight,
   QUESTION_LIMITS,
 } from "./data";
 
@@ -912,6 +913,31 @@ export default function App() {
                 </span>
                 <p>{c(item.question)}</p>
                 {item.questionId && (
+                  <div className="bilingual-note">
+                    <strong>
+                      {t(
+                        "One verified answer, two language communities",
+                        "Yksi tarkistettu vastaus, kaksi kieliryhmää",
+                      )}
+                    </strong>
+                    <p>
+                      {t(
+                        "The editor approved this exact English and Finnish text together.",
+                        "Toimittaja hyväksyi täsmälleen tämän englannin- ja suomenkielisen tekstin yhdessä.",
+                      )}{" "}
+                      {item.questionId === PREPARED_QUESTION_ID &&
+                        c(evakaInsight.crossCommunity)}
+                    </p>
+                    <button
+                      className="secondary"
+                      lang={lang === "en" ? "fi" : "en"}
+                      onClick={() => setLang(lang === "en" ? "fi" : "en")}
+                    >
+                      {lang === "en" ? "Lue suomeksi" : "Read in English"}
+                    </button>
+                  </div>
+                )}
+                {item.questionId && (
                   <small className="radar-link">
                     {t(
                       "Community Radar: this answer closes the reader question above. ",
@@ -1120,8 +1146,8 @@ export default function App() {
                     {t("Published", "Julkaistu")} {formatDate(SOURCE_PUBLISHED)}{" "}
                     · {t("accessed", "luettu")} {formatDate(SOURCE_ACCESSED)}.{" "}
                     {t(
-                      "English-language notice; the Finnish text of this explainer is our translation.",
-                      "Englanninkielinen tiedote; tämän jutun suomenkielinen teksti on käännöksemme.",
+                      "A City of Oulu notice in English, not a Kaleva article. The Finnish text of this explainer is our translation.",
+                      "Oulun kaupungin englanninkielinen tiedote, ei Kalevan juttu. Tämän jutun suomenkielinen teksti on käännöksemme.",
                     )}
                   </p>
                 </>
@@ -1303,45 +1329,47 @@ export default function App() {
               <div>
                 <span className="eyebrow">
                   {t(
-                    "KALEVA NEWS · FOR INTERNATIONAL OULU",
-                    "KALEVAN UUTISET · KANSAINVÄLISELLE OULULLE",
+                    "FROM COMMUNITIES TO JOURNALISM. FROM JOURNALISM TO COMMUNITIES.",
+                    "YHTEISÖISTÄ JOURNALISMIKSI. JOURNALISMISTA YHTEISÖILLE.",
                   )}
                 </span>
                 <h1>{t("Oulu, explained.", "Oulu, ymmärrettävästi.")}</h1>
                 <span className="intro-sub">
                   {t(
-                    "Kaleva’s Finnish local news, picked for Oulu’s international residents and explained in English. A human editor approves every explainer.",
-                    "Kalevan suomenkieliset paikallisuutiset valittuina Oulun kansainvälisille asukkaille ja selitettyinä englanniksi. Toimittaja hyväksyy jokaisen selityksen.",
+                    "Don’t just read the news. Shape it. International residents ask what Oulu needs to know; journalists verify the answers and publish them in English and Finnish, so the whole city benefits. Plus today’s Kaleva news, ranked for you.",
+                    "Älä vain lue uutisia. Vaikuta niihin. Kansainväliset asukkaat kysyvät, mitä Oulussa pitää tietää; toimittajat tarkistavat vastaukset ja julkaisevat ne englanniksi ja suomeksi koko kaupungin hyödyksi. Lisäksi Kalevan tämän päivän uutiset sinulle järjestettynä.",
                   )}
                 </span>
-                <button
-                  className="text-button feed-jump"
-                  onClick={() =>
-                    document
-                      .getElementById("news-feed-title")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                  }
-                >
-                  {t(
-                    "Today’s Kaleva news, ranked for you",
-                    "Kalevan tämän päivän uutiset sinulle järjestettynä",
-                  )}{" "}
-                  ↓
-                </button>
-                <button
-                  className="text-button feed-jump"
-                  onClick={() =>
-                    document
-                      .getElementById("community-radar")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                  }
-                >
-                  {t(
-                    "Community Radar: shape what we cover",
-                    "Community Radar: vaikuta siihen, mitä selvitämme",
-                  )}{" "}
-                  ↓
-                </button>
+                <div className="intro-jumps">
+                  <button
+                    className="text-button feed-jump"
+                    onClick={() =>
+                      document
+                        .getElementById("community-radar")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                  >
+                    {t(
+                      "Community Radar: shape what we cover",
+                      "Community Radar: vaikuta siihen, mitä selvitämme",
+                    )}{" "}
+                    ↓
+                  </button>
+                  <button
+                    className="text-button feed-jump"
+                    onClick={() =>
+                      document
+                        .getElementById("news-feed-title")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                  >
+                    {t(
+                      "Today’s Kaleva news, ranked for you",
+                      "Kalevan tämän päivän uutiset sinulle järjestettynä",
+                    )}{" "}
+                    ↓
+                  </button>
+                </div>
               </div>
               <div className="reader-filter">
                 <span>
@@ -1437,8 +1465,8 @@ export default function App() {
                   </h2>
                   <p className="muted">
                     {t(
-                      "Ask what you need explained about Oulu or a Kaleva story, and support questions you share. A human editor decides what to investigate: support shows interest, it never decides coverage on its own.",
-                      "Kysy, mitä Oulusta tai Kalevan jutusta pitäisi selittää, ja tue kysymyksiä, joita mietit itsekin. Ihmistoimittaja päättää, mitä selvitetään: tuki kertoo kiinnostuksesta, mutta ei yksin ratkaise juttuvalintaa.",
+                      "International residents help reveal what Oulu needs to know. Journalists verify the facts and make the answers accessible across languages. Support shows interest; an editor decides what to investigate.",
+                      "Kansainväliset asukkaat auttavat löytämään, mitä Oulussa pitää tietää. Toimittajat tarkistavat faktat ja tuovat vastaukset saataville eri kielillä. Tuki kertoo kiinnostuksesta; toimittaja päättää, mitä selvitetään.",
                     )}
                   </p>
                   <ol
@@ -1484,6 +1512,9 @@ export default function App() {
                             {q.persona && ` · ${c(q.persona).toUpperCase()}`}
                           </span>
                           <h3>{c(q.text)}</h3>
+                          {q.id === PREPARED_QUESTION_ID && (
+                            <p className="radar-why">{c(evakaInsight.why)}</p>
+                          )}
                           <div className="radar-row">
                             {statusPill(q)}
                             {!q.private && (
@@ -1668,6 +1699,47 @@ export default function App() {
               )}
             </span>
           </div>
+          <section className="value-for-kaleva" aria-labelledby="value-title">
+            <h2 id="value-title">
+              {t("What Kaleva could gain", "Mitä Kaleva voisi saada")}
+            </h2>
+            <ol className="value-grid">
+              {[
+                [
+                  t("Audience growth", "Uusi yleisö"),
+                  t(
+                    "Reach international residents who may not use Kaleva today, with journalism Kaleva already produces.",
+                    "Tavoita kansainvälisiä asukkaita, jotka eivät ehkä käytä Kalevaa nyt, journalismilla, jota Kaleva jo tekee.",
+                  ),
+                ],
+                [
+                  t("Editorial insight", "Toimituksellinen näkymä"),
+                  t(
+                    "Community questions reveal unmet local information needs that also matter to Finnish-speaking readers.",
+                    "Yhteisön kysymykset paljastavat paikallisia tiedontarpeita, joilla on merkitystä myös suomenkielisille lukijoille.",
+                  ),
+                ],
+                [
+                  t("New revenue potential", "Uusi tulomahdollisuus"),
+                  t(
+                    "Test one employer-funded pilot for companies hiring international professionals. A hypothesis, not confirmed demand.",
+                    "Testaa yksi työnantajan rahoittama pilotti kansainvälisiä osaajia palkkaaville yrityksille. Hypoteesi, ei vahvistettu kysyntä.",
+                  ),
+                ],
+              ].map(([h, p]) => (
+                <li key={h}>
+                  <strong>{h}</strong>
+                  <p>{p}</p>
+                </li>
+              ))}
+            </ol>
+            <p className="privacy-note">
+              {t(
+                "Evidence so far: one interview. One international resident we spoke to did not know Kaleva existed and got local information mainly through WhatsApp, Instagram, TikTok, Google and Yle. One interview is a lead to test, not market evidence.",
+                "Näyttö tähän mennessä: yksi haastattelu. Haastattelemamme kansainvälinen asukas ei tiennyt Kalevan olemassaolosta ja sai paikallistietonsa lähinnä WhatsAppista, Instagramista, TikTokista, Googlesta ja Yleltä. Yksi haastattelu on testattava vihje, ei markkinanäyttöä.",
+              )}
+            </p>
+          </section>
           <section className="employer-offer">
             <div>
               <span className="eyebrow">
@@ -2107,6 +2179,9 @@ export default function App() {
                   "Sisäänkirjautumista ei ole. Kaikki täällä valittu, hyväksytty tai julkaistu tallentuu vain tähän selaimeen eikä näy muille lukijoille tai Kalevalle. Ainoa palvelimen suojaus on toimittajan pääsykoodi maksulliseen AI-vaiheeseen. Oikea toimitus tarvitsisi henkilökohtaiset toimittajatunnukset ja palvelimen tarkistaman julkaisun.",
                 )}
               </p>
+              <button className="text-button" onClick={() => setModal("reset")}>
+                {t("Reset demo to the start ↻", "Palauta demo alkuun ↻")}
+              </button>
             </div>
           </section>
           <div className="workflow-strip">
@@ -2311,17 +2386,114 @@ export default function App() {
                   "Kaleva Median kuusi lukijatarvetta ohjaavat aihevalintaa. Yhteisön kannatus ei yksin ratkaise julkaisemista.",
                 )}
               </small>
-              <p>
-                {state.selected
-                  ? c(
-                      state.questions.find((q) => q.id === state.selected)!
-                        .text,
-                    )
-                  : t(
-                      "Select a question from the queue.",
-                      "Valitse kysymys jonosta.",
+              {selectedQuestion ? (
+                <section className="insight" aria-labelledby="insight-title">
+                  <h3 id="insight-title">
+                    {t("Community Insight", "Yhteisön näkökulma")}
+                  </h3>
+                  <p className="insight-question">{c(selectedQuestion.text)}</p>
+                  <dl>
+                    <dt>{t("1 · Community need", "1 · Tiedontarve")}</dt>
+                    <dd>
+                      {selectedQuestion.id === PREPARED_QUESTION_ID
+                        ? c(evakaInsight.need)
+                        : t(
+                            "As asked by the reader above; not yet assessed by an editor.",
+                            "Kuten lukija yllä kysyy; toimittaja ei ole vielä arvioinut.",
+                          )}
+                    </dd>
+                    {selectedQuestion.id === PREPARED_QUESTION_ID && (
+                      <>
+                        <dt>
+                          {t("2 · Audience affected", "2 · Keitä asia koskee")}{" "}
+                          <span className="insight-tag">
+                            {t("editorial assessment", "toimituksen arvio")}
+                          </span>
+                        </dt>
+                        <dd>{c(evakaInsight.audience)}</dd>
+                      </>
                     )}
-              </p>
+                    <dt>
+                      {t("3 · Community signal", "3 · Yhteisön signaali")}
+                    </dt>
+                    <dd>
+                      {t(
+                        `${selectedQuestion.supports} support${selectedQuestion.supports === 1 ? "" : "s"} in this browser`,
+                        `${selectedQuestion.supports} tukea tässä selaimessa`,
+                      )}
+                      {!selectedQuestion.private &&
+                        t(
+                          " · illustrative seeded question",
+                          " · havainnollistava esimerkkikysymys",
+                        )}
+                      {t(
+                        ". A signal, not a decision.",
+                        ". Signaali, ei päätös.",
+                      )}
+                    </dd>
+                    <dt>
+                      {t("4 · Verified evidence", "4 · Tarkistettu näyttö")}
+                    </dt>
+                    <dd>
+                      {selectedQuestion.id === PREPARED_QUESTION_ID ? (
+                        <>
+                          <ul>
+                            {evakaInsight.evidence.map((i) => (
+                              <li key={i}>{c(knownClaims[i])}</li>
+                            ))}
+                          </ul>
+                          <a href={SOURCE} target="_blank" rel="noreferrer">
+                            {t(
+                              "City of Oulu notice, 14 Oct 2026 (not a Kaleva article)",
+                              "Oulun kaupungin tiedote 14.10.2026 (ei Kalevan juttu)",
+                            )}{" "}
+                            ↗
+                          </a>
+                        </>
+                      ) : selectedQuestion.source ? (
+                        t(
+                          "Only Kaleva’s headline and feed summary. The editor must read the full article.",
+                          "Vain Kalevan otsikko ja syötekuvaus. Toimittajan pitää lukea koko juttu.",
+                        )
+                      ) : (
+                        t(
+                          "No verified source yet. New reporting is required.",
+                          "Tarkistettua lähdettä ei vielä ole. Tarvitaan uutta tiedonhankintaa.",
+                        )
+                      )}
+                    </dd>
+                    {selectedQuestion.id === PREPARED_QUESTION_ID && (
+                      <>
+                        <dt>{t("5 · Reporting gap", "5 · Avoin kysymys")}</dt>
+                        <dd>
+                          <ul>
+                            {evakaInsight.gaps.map((i) => (
+                              <li key={i}>{c(unknowns[i])}</li>
+                            ))}
+                          </ul>
+                        </dd>
+                        <dt>
+                          {t(
+                            "6 · Cross-community value",
+                            "6 · Hyöty molemmille kieliryhmille",
+                          )}{" "}
+                          <span className="insight-tag">
+                            {t("editorial assessment", "toimituksen arvio")}
+                          </span>
+                        </dt>
+                        <dd>{c(evakaInsight.crossCommunity)}</dd>
+                      </>
+                    )}
+                  </dl>
+                </section>
+              ) : (
+                <p>
+                  {t(
+                    "Select a question from the queue.",
+                    "Valitse kysymys jonosta.",
+                  )}
+                </p>
+              )}
               <label>
                 {t(
                   "Why this question deserves coverage",
@@ -2345,6 +2517,25 @@ export default function App() {
                   )}
                 />
               </label>
+              {state.selected === PREPARED_QUESTION_ID && (
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    setState((s) => ({
+                      ...s,
+                      reason: c(evakaInsight.reason),
+                      approval: null,
+                      fact: false,
+                      language: false,
+                    }))
+                  }
+                >
+                  {t(
+                    "Use the Community Insight as the reason (editable)",
+                    "Käytä yhteisön näkökulmaa perusteluna (muokattavissa)",
+                  )}
+                </button>
+              )}
               <p className="privacy-note" id="prepared-draft-scope">
                 {selectedQuestion?.source
                   ? t(
@@ -2679,6 +2870,15 @@ export default function App() {
                     <Icon name="arrow" />
                   </button>
                 </div>
+                {answerFor(state.draftFor) && (
+                  <button
+                    className="secondary"
+                    onClick={() => showStory(answerFor(state.draftFor)!)}
+                  >
+                    {t("Open the published answer", "Avaa julkaistu vastaus")}{" "}
+                    <Icon name="arrow" />
+                  </button>
+                )}
                 <p className="privacy-note">
                   {state.rejected
                     ? t(

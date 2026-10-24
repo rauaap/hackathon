@@ -603,27 +603,33 @@ export function classify(item: Normalized, now: Date): NewsItem {
     return [{ id, matched, context }];
   });
   // Paikka päätellään tärkeysjärjestyksessä: Oulu voittaa, vaikka muukin paikka mainitaan.
-  const text = words.join(" ");
-  const candidates: [Locality, string[]][] = [
-    ["oulu", match(words, OULU)],
-    ["region", placeMatch(words, REGION, REGION_EXACT)],
-    ["elsewhere", placeMatch(words, ELSEWHERE, ELSEWHERE_EXACT)],
-    [
-      "international",
-      INTERNATIONAL.flatMap((x) =>
-        x.includes(" ")
-          ? text.includes(x)
-            ? [x]
-            : []
-          : words.filter((w) => w.startsWith(x)),
-      ),
-    ],
-    ["national", placeMatch(words, NATIONAL, [])],
-  ];
-  const [level, matched] = candidates.find(([, m]) => m.length) ?? [
-    "uncertain",
-    [],
-  ];
+  const places = (ws: string[]): [Locality, string[]][] => {
+    const text = ws.join(" ");
+    return [
+      ["oulu", match(ws, OULU)],
+      ["region", placeMatch(ws, REGION, REGION_EXACT)],
+      ["elsewhere", placeMatch(ws, ELSEWHERE, ELSEWHERE_EXACT)],
+      [
+        "international",
+        INTERNATIONAL.flatMap((x) =>
+          x.includes(" ")
+            ? text.includes(x)
+              ? [x]
+              : []
+            : ws.filter((w) => w.startsWith(x)),
+        ),
+      ],
+      ["national", placeMatch(ws, NATIONAL, [])],
+    ];
+  };
+  const first = (c: [Locality, string[]][]) => c.find(([, m]) => m.length);
+  // Otsikossa nimetty muu paikkakunta tai ulkomaa voittaa kuvauksen sivumaininnan Oulusta.
+  const headlinePlace = first(places(titleWords));
+  const [level, matched] =
+    headlinePlace &&
+    (headlinePlace[0] === "elsewhere" || headlinePlace[0] === "international")
+      ? headlinePlace
+      : (first(places(words)) ?? ["uncertain", []]);
   const locality = { level, matched: [...new Set(matched)] };
   const localityContext: MatchContext =
     (level === "oulu" || level === "region") && !inTitle(matched)

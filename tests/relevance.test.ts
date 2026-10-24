@@ -122,3 +122,23 @@ test("classification never cites words that are not in the headline or summary",
           assert.ok(text.includes(w), `${w} not in ${item.title}`);
   }
 });
+
+test("an incidental Oulu mention in the summary does not override the headline's place", () => {
+  const tram = one(
+    "Tampereella avattiin uusi ratikkalinja",
+    "Myös Oulussa on suunniteltu raitiotietä.",
+  );
+  assert.equal(tram.locality.level, "elsewhere");
+  assert.equal(
+    one("Ukrainan sota pitkittyy", "Oululainen asiantuntija arvioi tilannetta.")
+      .locality.level,
+    "international",
+  );
+  // Valtakunnallinen päätös, jonka vaikutus Ouluun kerrotaan, on Oulun juttu (puolin pistein).
+  const cut = one(
+    "Hallitus leikkaa varhaiskasvatuksesta",
+    "Muutos koskee myös Oulun päiväkoteja.",
+  );
+  const loc = cut.relevance.families.reasons.find((r) => r.type === "locality");
+  assert.deepEqual(loc && [loc.level, loc.points], ["oulu", 1]);
+});
