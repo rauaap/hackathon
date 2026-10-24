@@ -72,7 +72,7 @@ export type NewsResponse = {
   assistant: {
     available: boolean;
     model: string;
-    reason: "no_backend" | "no_access_code" | null;
+    reason: "no_backend" | "backend_unreachable" | "no_access_code" | null;
   };
   items: (NewsItem & { styleReferences: StyleMatch[] })[];
   styleGuide: {
@@ -756,11 +756,10 @@ export async function GET() {
     servedAt: new Date(now).toISOString(),
     method:
       "rules-v1: Finnish keyword stems in headline and feed description, Oulu/region place names, recency and item type. No AI model.",
-    assistant: {
-      available: assistantAvailable(),
-      model: ASSISTANT_MODEL,
-      reason: assistantReason(),
-    },
+    assistant: await (async () => {
+      const reason = await assistantReason();
+      return { available: reason === null, model: backendModel(), reason };
+    })(),
     items: cache.feed.items.map((item) => {
       const classified = classify(item, new Date(now));
       return {
@@ -1267,15 +1266,48 @@ const backendSecret = () => process.env.AGENT_BACKEND_SECRET ?? "";
 // Avustaja on käytössä vain, kun sekä taustapalvelu että toimituksen pääsykoodi on määritetty (fail closed).
 const MIN_CODE_LENGTH = 24;
 const accessCode = () => process.env.NEWSROOM_ACCESS_CODE ?? "";
-function assistantReason(): "no_backend" | "no_access_code" | null {
+// Asetukset eivät todista, että palvelin vastaa: /health tarkistetaan ilman mallikutsua.
+// Health ei todista generoinnin toimivan; vain onnistunut luonnos todistaa sen.
+const HEALTH_TTL_OK = 60_000;
+const HEALTH_TTL_FAIL = 15_000;
+let health: { at: number; ok: boolean; model: string | null } | null = null;
+async function backendHealth() {
+  const now = Date.now();
+  if (health && now - health.at < (health.ok ? HEALTH_TTL_OK : HEALTH_TTL_FAIL))
+    return health;
+  try {
+    const response = await fetch(new URL("/health", backendUrl()), {
+      signal: AbortSignal.timeout(3_000),
+      redirect: "error",
+    });
+    const body = response.ok
+      ? ((await response.json()) as { ok?: unknown; model?: unknown })
+      : null;
+    health = {
+      at: now,
+      ok: body?.ok === true,
+      model: typeof body?.model === "string" ? body.model : null,
+    };
+  } catch {
+    health = { at: now, ok: false, model: null };
+  }
+  return health;
+}
+async function assistantReason(): Promise<
+  "no_backend" | "backend_unreachable" | "no_access_code" | null
+> {
   if (!clientOverride && !(backendUrl() && backendSecret()))
     return "no_backend";
   if (accessCode().length < MIN_CODE_LENGTH) return "no_access_code";
+  if (!clientOverride && !(await backendHealth()).ok)
+    return "backend_unreachable";
   return null;
 }
-export function assistantAvailable() {
-  return assistantReason() === null;
+export async function assistantAvailable() {
+  return (await assistantReason()) === null;
 }
+// Malli, jonka taustapalvelu ilmoittaa käyttävänsä; muuten oletus.
+const backendModel = () => health?.model ?? ASSISTANT_MODEL;
 // Vakioaikainen vertailu tiivisteillä, jotta pituus tai sisältö ei vuoda ajoituksesta.
 function authorized(request: Request) {
   const given =
@@ -1318,6 +1350,7 @@ const inFlight = new Map<string, Promise<AssistDraft>>();
 let calls: number[] = [];
 let failures: number[] = [];
 export function resetAssistant() {
+  health = null;
   drafts.clear();
   inFlight.clear();
   calls = [];
@@ -1502,7 +1535,7 @@ async function generate(item: Normalized): Promise<AssistDraft> {
       output,
       matches.map((m) => m.id),
     ),
-    model: ASSISTANT_MODEL,
+    model: backendModel(),
     promptVersion: PROMPT_VERSION,
     generatedAt: new Date().toISOString(),
     usage: response.usage
@@ -1525,7 +1558,7 @@ async function generate(item: Normalized): Promise<AssistDraft> {
 }
 
 export async function POST(request: Request) {
-  if (!assistantAvailable()) return json({ error: "unavailable" }, 503);
+  if (!(await assistantAvailable())) return json({ error: "unavailable" }, 503);
   const now = Date.now();
   failures = failures.filter((t) => now - t < FAILURE_WINDOW_MS);
   if (failures.length >= MAX_FAILURES) return json({ error: "locked" }, 429);
