@@ -11,7 +11,7 @@ import type {
 import type { Group, Lang, SourceLead } from "./data";
 
 const CACHE_KEY = "kaleva-local-news-cache-v1";
-const LIMIT = 6;
+const LIMIT = 5;
 const MIN_SCORE = 3;
 export const topicNames: Record<TopicId, { en: string; fi: string }> = {
   housing: { en: "Housing", fi: "Asuminen" },
@@ -229,8 +229,8 @@ export default function NewsFeed({
         <p className="feed-attribution">
           {t("Source: Kaleva", "Lähde: Kaleva")} ·{" "}
           {t(
-            "original Finnish headline and feed description, not translated · no summary generated",
-            "alkuperäinen otsikko ja syötteen kuvaus · ei tiivistelmää",
+            "Finnish original, not translated",
+            "alkuperäinen otsikko ja kuvaus",
           )}
         </p>
         {item.topics.length > 0 && (
@@ -305,6 +305,9 @@ export default function NewsFeed({
             )}
           </span>
           <h2 id="news-feed-title">
+            {t("Your News", "Sinun uutisesi")}
+          </h2>
+          <p className="feed-subtitle">
             {audience
               ? t(
                   "Kaleva today, ranked for you",
@@ -314,7 +317,7 @@ export default function NewsFeed({
                   "Kaleva today, latest first",
                   "Kaleva tänään, uusimmat ensin",
                 )}
-          </h2>
+          </p>
         </div>
         <div
           className="segmented"

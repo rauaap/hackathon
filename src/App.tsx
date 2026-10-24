@@ -254,7 +254,9 @@ const groups: Group[] = ["everyone", "students", "working"];
 export default function App() {
   const [state, setState] = useState<DemoState>(loadState);
   const [lang, setLang] = useState<Lang>("en");
-  const [group, setGroup] = useState<Group>("everyone");
+  // Etusivu painottaa ensisijaista yleisöä; muut yleisöt ovat yhden napin päässä.
+  const [group, setGroup] = useState<Group>("working");
+  const [answerLang, setAnswerLang] = useState<Lang>("en");
   const viewFromHash = (): View =>
     location.pathname !== "/" ||
     ![
@@ -1348,79 +1350,54 @@ export default function App() {
         </span>
       </div>
       {view !== "presenter" && (
-        <header className="wrap">
-          <div className="utility">
+        <header className="wrap site-header">
+          <button
+            className="masthead"
+            onClick={() => navigate("reader")}
+            aria-label="Kaleva Local home"
+          >
+            Kaleva
             <span>
-              <Icon name="pin" size={14} /> OULU, FINLAND
+              Local<span className="masthead-dot">.</span>
             </span>
-            <div>
-              <button
-                className="newsroom-link"
-                onClick={() => navigate("newsroom")}
-              >
-                <span className="tiny-square" />
-                {t("Newsroom demo", "Toimitusdemo")} <span>↗</span>
-              </button>
-              <span className="utility-divider" />
-              <button
-                className={lang === "en" ? "language active" : "language"}
-                onClick={() => setLang("en")}
-                aria-pressed={lang === "en"}
-              >
-                EN
-              </button>
-              <button
-                className={lang === "fi" ? "language active" : "language"}
-                onClick={() => setLang("fi")}
-                aria-pressed={lang === "fi"}
-              >
-                FI
-              </button>
-            </div>
-          </div>
-          <div className="masthead-row">
-            <button
-              className="masthead"
-              onClick={() => navigate("reader")}
-              aria-label="Kaleva Local home"
-            >
-              Kaleva
-              <span>
-                Local<span className="masthead-dot">.</span>
-              </span>
-            </button>
-            <p>
-              {t("Understand Oulu.", "Ymmärrä Oulua.")}
-              <br />
-              <em>{t("Feel at home.", "Tunne olevasi kotona.")}</em>
-            </p>
-            <button
-              className="primary masthead-cta"
-              onClick={() => navigate("offers")}
-            >
-              {t("Discover Local Plus", "Tutustu Local Plussaan")}{" "}
-              <Icon name="arrow" size={16} />
-            </button>
-          </div>
+          </button>
           <nav aria-label={t("Main navigation", "Päävalikko")}>
-            <div>
-              <button
-                className={view === "reader" ? "nav-item selected" : "nav-item"}
-                onClick={() => navigate("reader")}
-              >
-                {t("Your Oulu", "Sinun Oulusi")}
-              </button>
-              <button
-                className={view === "offers" ? "nav-item selected" : "nav-item"}
-                onClick={() => navigate("offers")}
-              >
-                {t("Membership & business", "Jäsenyys ja yritykset")}
-              </button>
-            </div>
-            <span className="nav-note">
-              <span className="status-dot" />
-              {t("Independent by design", "Riippumattomuus ensin")}
-            </span>
+            <button
+              className={view === "reader" ? "nav-item selected" : "nav-item"}
+              onClick={() => navigate("reader")}
+              aria-current={view === "reader" ? "page" : undefined}
+            >
+              {t("Your Oulu", "Sinun Oulusi")}
+            </button>
+            <button
+              className={view === "offers" ? "nav-item selected" : "nav-item"}
+              onClick={() => navigate("offers")}
+              aria-current={view === "offers" ? "page" : undefined}
+            >
+              {t("Membership & business", "Jäsenyys ja yritykset")}
+            </button>
+            <button
+              className="newsroom-link"
+              onClick={() => navigate("newsroom")}
+            >
+              <span className="tiny-square" />
+              {t("Newsroom demo", "Toimitusdemo")} <span>↗</span>
+            </button>
+            <span className="utility-divider" />
+            <button
+              className={lang === "en" ? "language active" : "language"}
+              onClick={() => setLang("en")}
+              aria-pressed={lang === "en"}
+            >
+              EN
+            </button>
+            <button
+              className={lang === "fi" ? "language active" : "language"}
+              onClick={() => setLang("fi")}
+              aria-pressed={lang === "fi"}
+            >
+              FI
+            </button>
           </nav>
         </header>
       )}
@@ -1476,174 +1453,67 @@ export default function App() {
           renderStory()
         ) : (
           <main className="wrap reader-view">
-            <section className="section-intro">
-              <div>
-                <span className="eyebrow">
-                  {t(
-                    "FROM COMMUNITIES TO JOURNALISM. FROM JOURNALISM TO COMMUNITIES.",
-                    "YHTEISÖISTÄ JOURNALISMIKSI. JOURNALISMISTA YHTEISÖILLE.",
-                  )}
-                </span>
-                <h1>{t("Oulu, explained.", "Oulu, ymmärrettävästi.")}</h1>
-                <span className="intro-sub">
-                  {t(
-                    "Don’t just read the news. Shape it. International residents ask what Oulu needs to know; journalists verify the answers and publish them in English and Finnish, so the whole city benefits. Plus today’s Kaleva news, ranked for you.",
-                    "Älä vain lue uutisia. Vaikuta niihin. Kansainväliset asukkaat kysyvät, mitä Oulussa pitää tietää; toimittajat tarkistavat vastaukset ja julkaisevat ne englanniksi ja suomeksi koko kaupungin hyödyksi. Lisäksi Kalevan tämän päivän uutiset sinulle järjestettynä.",
-                  )}
-                </span>
-                <div className="intro-jumps">
-                  <button
-                    className="text-button feed-jump"
-                    onClick={() =>
-                      document
-                        .getElementById("community-radar")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
-                  >
-                    {t(
-                      "Community Radar: shape what we cover",
-                      "Community Radar: vaikuta siihen, mitä selvitämme",
-                    )}{" "}
-                    ↓
-                  </button>
-                  <button
-                    className="text-button feed-jump"
-                    onClick={() =>
-                      document
-                        .getElementById("news-feed-title")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
-                  >
-                    {t(
-                      "Today’s Kaleva news, ranked for you",
-                      "Kalevan tämän päivän uutiset sinulle järjestettynä",
-                    )}{" "}
-                    ↓
-                  </button>
-                </div>
-              </div>
-              <div className="reader-filter">
-                <span>
-                  {t(
-                    "Make it relevant to you",
-                    "Sinulle merkitykselliset jutut",
-                  )}
-                </span>
-                <div
-                  className="segmented"
-                  role="group"
-                  aria-label={t("Reader filter", "Lukijaryhmä")}
-                >
-                  {groups.map((g) => (
-                    <button
-                      key={g}
-                      aria-pressed={g === group}
-                      className={g === group ? "active" : ""}
-                      onClick={() => setGroup(g)}
-                    >
-                      {groupName(g)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <section className="section-intro dashboard-intro">
+              <h1>
+                {t(
+                  "Your Oulu. Your news. Your voice.",
+                  "Sinun Oulusi. Sinun uutisesi. Sinun äänesi.",
+                )}
+              </h1>
+              <p className="intro-sub">
+                {t(
+                  "Understand local news, ask what matters, and get answers you can trust.",
+                  "Ymmärrä paikalliset uutiset, kysy tärkeistä asioista ja saa vastauksia, joihin voit luottaa.",
+                )}
+              </p>
             </section>
-            <div className="lead-grid">
-              <article className="lead-story">
-                <button className="lead-open" onClick={() => showStory("main")}>
-                  <div className="hero-image">
-                    <CityArt />
-                    <span className="image-caption">
-                      {t(
-                        "OULU · ORIGINAL CONCEPT ILLUSTRATION",
-                        "OULU · ALKUPERÄINEN KONSEPTIKUVITUS",
-                      )}
-                    </span>
-                    <span className="image-tag">
-                      {t("THE BIG PICTURE", "KOKONAISKUVA")}
-                    </span>
-                  </div>
-                  <div className="lead-copy">
-                    <div className="category">
-                      {t("Local life", "Paikallinen elämä")}
-                      <span className="category-divider" />
-                      {t(
-                        "City notice · 14 Oct 2026",
-                        "Kaupungin tiedote · 14.10.2026",
-                      )}
-                    </div>
-                    <h2>{c(title)}</h2>
-                    <p>{c(standfirst)}</p>
-                    <div className="lead-meta">
-                      <span>
-                        <Icon name="clock" size={14} />
-                        {t("4 min read", "4 min lukuaika")}
-                      </span>
-                      <span>
-                        {t(
-                          "Sources open to everyone",
-                          "Lähteet avoinna kaikille",
-                        )}
-                      </span>
-                      <span className="read-link">
-                        {t("Read the explainer", "Lue taustajuttu")}{" "}
-                        <Icon name="arrow" size={18} />
-                      </span>
-                    </div>
-                  </div>
-                </button>
-                <div className="reader-context">
-                  <span className="context-dot" />
-                  <p>{c(contexts[group])}</p>
-                </div>
-              </article>
-              <aside className="right-rail">
+            <div className="dashboard">
+              <div className="dashboard-news">
+                <NewsFeed
+                  lang={lang}
+                  group={group}
+                  onGroup={setGroup}
+                  onQueue={queueSource}
+                  onOpenNewsroom={() => navigate("newsroom")}
+                  explained={Object.fromEntries(
+                    state.stories.flatMap((x) =>
+                      x.sourceLead ? [[x.sourceLead.url, x.id]] : [],
+                    ),
+                  )}
+                  onRead={(id) => {
+                    const found = state.stories.find((x) => x.id === id);
+                    if (found) showStory(found);
+                  }}
+                  queuedUrls={state.questions.flatMap((q) =>
+                    q.source ? [q.source.url] : [],
+                  )}
+                />
+              </div>
+              <aside className="dashboard-side">
                 <section
                   className="community-card radar"
                   id="community-radar"
                   aria-labelledby="radar-title"
                 >
-                  <div className="rail-heading">
-                    <Icon name="chat" />
-                    <span className="eyebrow">
-                      {t("COMMUNITY RADAR", "COMMUNITY RADAR")}
-                    </span>
-                  </div>
+                  <span className="eyebrow">COMMUNITY RADAR</span>
                   <h2 id="radar-title">
                     {t(
-                      "Don’t just read the news. Shape it.",
-                      "Älä vain lue uutisia. Vaikuta niihin.",
+                      "Ask what matters. Shape what gets covered.",
+                      "Kysy tärkeistä asioista. Vaikuta siihen, mitä selvitetään.",
                     )}
                   </h2>
-                  <p className="muted">
-                    {t(
-                      "International residents help reveal what Oulu needs to know. Journalists verify the facts and make the answers accessible across languages. Support shows interest; an editor decides what to investigate.",
-                      "Kansainväliset asukkaat auttavat löytämään, mitä Oulussa pitää tietää. Toimittajat tarkistavat faktat ja tuovat vastaukset saataville eri kielillä. Tuki kertoo kiinnostuksesta; toimittaja päättää, mitä selvitetään.",
-                    )}
-                  </p>
-                  <ol
-                    className="radar-steps"
-                    aria-label={t("Question stages", "Kysymyksen vaiheet")}
-                  >
-                    {(
-                      [
-                        "submitted",
-                        "review",
-                        "investigating",
-                        "published",
-                      ] as QuestionStatus[]
-                    ).map((st) => (
-                      <li key={st} className={st}>
-                        {c(statusName[st])}
-                      </li>
-                    ))}
-                  </ol>
                   <ul className="radar-list">
                     {[
-                      ...state.questions.filter((q) => !q.private),
+                      ...state.questions.filter(
+                        (q) => q.id === PREPARED_QUESTION_ID,
+                      ),
+                      ...state.questions.filter(
+                        (q) => q.id !== PREPARED_QUESTION_ID && !q.private,
+                      ),
                       ...state.questions.filter((q) => q.private).slice(-3),
-                    ].map((q) => {
+                    ].map((q, i) => {
                       const answer = answerFor(q.id);
-                      return (
+                      const item = (
                         <li key={q.id} className="community-question">
                           <span className="micro-label">
                             {q.private
@@ -1700,16 +1570,98 @@ export default function App() {
                               <Icon name="arrow" size={14} />
                             </button>
                           )}
+                          {q.id === PREPARED_QUESTION_ID && (
+                            <button
+                              className="text-button lead-open"
+                              onClick={() => showStory("main")}
+                            >
+                              {t(
+                                "Background: what the city’s notice says (concept explainer)",
+                                "Taustaa: mitä kaupungin tiedote kertoo (konseptijuttu)",
+                              )}{" "}
+                              <Icon name="arrow" size={14} />
+                            </button>
+                          )}
                         </li>
                       );
+                      return i === 0 || q.private ? item : null;
                     })}
                   </ul>
-                  <small className="radar-note">
-                    {t(
-                      "Seeded questions are illustrative, not real readers. Support is counted in this browser only, once per question. Stages change only when the editor acts in the newsroom demo.",
-                      "Valmiit kysymykset ovat havainnollistavia, eivät oikeiden lukijoiden. Tuki lasketaan vain tässä selaimessa, kerran kysymystä kohden. Vaihe muuttuu vain, kun toimittaja toimii toimitusdemossa.",
-                    )}
-                  </small>
+                  {(() => {
+                    const rest = state.questions.filter(
+                      (q) => q.id !== PREPARED_QUESTION_ID && !q.private,
+                    );
+                    return rest.length > 0 ? (
+                      <details className="radar-more">
+                        <summary>
+                          {t(
+                            `More sample questions (${rest.length})`,
+                            `Lisää esimerkkikysymyksiä (${rest.length})`,
+                          )}
+                        </summary>
+                        <ul className="radar-list">
+                          {rest.map((q) => {
+                            const answer = answerFor(q.id);
+                            return (
+                              <li key={q.id} className="community-question">
+                                <span className="micro-label">
+                                  {q.private
+                                    ? q.source
+                                      ? t(
+                                          "YOUR QUESTION ABOUT A KALEVA STORY · ONLY VISIBLE TO YOU",
+                                          "KYSYMYKSESI KALEVAN JUTUSTA · NÄKYY VAIN SINULLE",
+                                        )
+                                      : t(
+                                          "YOUR QUESTION · ONLY VISIBLE TO YOU",
+                                          "KYSYMYKSESI · NÄKYY VAIN SINULLE",
+                                        )
+                                    : t(
+                                        "ILLUSTRATIVE READER QUESTION",
+                                        "HAVAINNOLLISTAVA LUKIJAKYSYMYS",
+                                      )}
+                                </span>
+                                <h3>{c(q.text)}</h3>
+                                <div className="radar-row">
+                                  {statusPill(q)}
+                                  {!q.private && (
+                                    <button
+                                      className={`support-button ${q.supported ? "supported" : ""}`}
+                                      disabled={q.supported}
+                                      onClick={() => supportQuestion(q.id)}
+                                    >
+                                      <Icon
+                                        name={q.supported ? "check" : "plus"}
+                                        size={14}
+                                      />
+                                      {q.supported
+                                        ? t("Supported", "Tuettu")
+                                        : t(
+                                            "I wonder this too",
+                                            "Minäkin mietin tätä",
+                                          )}
+                                      <span>{q.supports}</span>
+                                    </button>
+                                  )}
+                                </div>
+                                {answer && (
+                                  <button
+                                    className="text-button"
+                                    onClick={() => showStory(answer)}
+                                  >
+                                    {t(
+                                      "Read the checked answer",
+                                      "Lue tarkistettu vastaus",
+                                    )}{" "}
+                                    <Icon name="arrow" size={14} />
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </details>
+                    ) : null;
+                  })()}
                   <button
                     className="primary full"
                     onClick={() => setModal("question")}
@@ -1717,106 +1669,133 @@ export default function App() {
                     {t("Ask a question", "Lähetä kysymys")}
                     <Icon name="arrow" size={16} />
                   </button>
-                  <p className="privacy-note">
+                  <small className="radar-note">
                     {t(
-                      "Private editorial queue. A human editor chooses what to investigate.",
-                      "Yksityinen toimitusjono. Ihmistoimittaja valitsee tutkittavat aiheet.",
+                      "Sample questions are illustrative. Support counts in this browser only. An editor decides what to investigate; your question stays private.",
+                      "Esimerkkikysymykset ovat havainnollistavia. Tuki lasketaan vain tässä selaimessa. Toimittaja päättää, mitä selvitetään; kysymyksesi pysyy yksityisenä.",
                     )}
-                  </p>
+                  </small>
                 </section>
-                <div className="briefing-card">
+                <section
+                  className="verified-answers"
+                  aria-labelledby="answers-title"
+                >
                   <span className="eyebrow">
-                    {t("THE LOCAL BRIEFING", "PAIKALLINEN VIIKKOKIRJE")}
+                    {t("VERIFIED ANSWERS", "TARKISTETUT VASTAUKSET")}
                   </span>
-                  <h3>
+                  <h2 id="answers-title">
                     {t(
-                      "Less searching. More understanding.",
-                      "Vähemmän etsimistä. Enemmän ymmärrystä.",
+                      "Checked against sources, reviewed by an editor",
+                      "Lähteistä tarkistettu, toimittajan hyväksymä",
                     )}
-                  </h3>
-                  <p>
-                    {t(
-                      "A preview of a calmer, more useful week in Oulu.",
-                      "Esikatselu selkeämmästä Oulu-viikosta.",
-                    )}
-                  </p>
-                  <button
-                    className="text-button"
-                    onClick={() => showStory(briefingPreview)}
-                  >
-                    {t(
-                      "Preview the weekly digest",
-                      "Katso viikkokirjeen esimerkki",
-                    )}{" "}
-                    <Icon name="arrow" size={16} />
-                  </button>
-                </div>
+                  </h2>
+                  {state.stories.length === 0 ? (
+                    <p className="answers-empty">
+                      {t(
+                        "No verified answers yet. When an editor publishes a checked answer to a community question, it appears here.",
+                        "Tarkistettuja vastauksia ei vielä ole. Kun toimittaja julkaisee tarkistetun vastauksen yhteisön kysymykseen, se näkyy tässä.",
+                      )}
+                    </p>
+                  ) : (
+                    <div className="published-section">
+                      {[...state.stories]
+                        .sort(
+                          (a, b) =>
+                            Number(!!b.questionId) - Number(!!a.questionId),
+                        )
+                        .slice(0, 3)
+                        .map((item, i) => {
+                          const l: Lang = i === 0 ? answerLang : lang;
+                          const excerpt = item.body[l].split("\n\n")[0];
+                          return (
+                            <article
+                              key={item.id}
+                              className={`answer-item ${i === 0 ? "featured" : ""}`}
+                              lang={l}
+                            >
+                              {i === 0 && (
+                                <div
+                                  className="answer-lang"
+                                  role="group"
+                                  aria-label="Language / Kieli"
+                                >
+                                  {(["en", "fi"] as Lang[]).map((x) => (
+                                    <button
+                                      key={x}
+                                      aria-pressed={answerLang === x}
+                                      className={
+                                        answerLang === x ? "active" : ""
+                                      }
+                                      onClick={() => setAnswerLang(x)}
+                                    >
+                                      {x.toUpperCase()}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              <h3>{item.title[l]}</h3>
+                              {item.question && (
+                                <p className="answer-question">
+                                  {l === "en" ? "Answers: " : "Vastaa: "}“
+                                  {item.question[l]}”
+                                </p>
+                              )}
+                              {i === 0 && (
+                                <p className="answer-excerpt">
+                                  {excerpt.length > 280
+                                    ? `${excerpt.slice(0, 277)}…`
+                                    : excerpt}
+                                </p>
+                              )}
+                              <p className="answer-trust">
+                                {item.sourceLead ? (
+                                  <a
+                                    href={item.sourceLead.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    {l === "en"
+                                      ? "Source: Kaleva ↗"
+                                      : "Lähde: Kaleva ↗"}
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={SOURCE}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    {l === "en"
+                                      ? "Source: City of Oulu notice (not a Kaleva article) ↗"
+                                      : "Lähde: Oulun kaupungin tiedote (ei Kalevan juttu) ↗"}
+                                  </a>
+                                )}
+                                <span>
+                                  {item.ai
+                                    ? l === "en"
+                                      ? "AI-assisted, then fact- and language-checked in this browser by a fictional demo editor. Not reviewed by Kaleva journalists."
+                                      : "Tekoälyn avustama, faktat ja kieli tarkistettu tässä selaimessa kuvitteellisen demotoimittajan toimesta. Ei Kalevan toimittajien tarkistama."
+                                    : l === "en"
+                                      ? "Fact- and language-checked in this browser by a fictional demo editor. Not reviewed by Kaleva journalists."
+                                      : "Faktat ja kieli tarkistettu tässä selaimessa kuvitteellisen demotoimittajan toimesta. Ei Kalevan toimittajien tarkistama."}
+                                </span>
+                              </p>
+                              <button
+                                className="text-button card-open"
+                                onClick={() => showStory(item)}
+                              >
+                                {l === "en"
+                                  ? "Read the full answer"
+                                  : "Lue koko vastaus"}{" "}
+                                <Icon name="arrow" size={14} />
+                              </button>
+                            </article>
+                          );
+                        })}
+                    </div>
+                  )}
+                </section>
               </aside>
             </div>
-            <NewsFeed
-              lang={lang}
-              group={group}
-              onGroup={setGroup}
-              onQueue={queueSource}
-              onOpenNewsroom={() => navigate("newsroom")}
-              explained={Object.fromEntries(
-                state.stories.flatMap((x) =>
-                  x.sourceLead ? [[x.sourceLead.url, x.id]] : [],
-                ),
-              )}
-              onRead={(id) => {
-                const found = state.stories.find((x) => x.id === id);
-                if (found) showStory(found);
-              }}
-              queuedUrls={state.questions.flatMap((q) =>
-                q.source ? [q.source.url] : [],
-              )}
-            />
-            {state.stories.length > 0 && (
-              <section className="published-section">
-                <div className="section-title">
-                  <h2>
-                    {t("From your questions", "Kysymyksistäsi syntynyttä")}
-                  </h2>
-                  <span className="badge green">
-                    {t(
-                      "Human-approved · local demo",
-                      "Ihmisen hyväksymä · paikallinen demo",
-                    )}
-                  </span>
-                </div>
-                <div className="story-grid">
-                  {state.stories.map((item) => (
-                    <StoryCard key={item.id} item={item} />
-                  ))}
-                </div>
-              </section>
-            )}
-            <section className="more-stories">
-              <div className="section-title">
-                <h2>{t("Life around you", "Elämää ympärilläsi")}</h2>
-                <span>
-                  {t(
-                    "Ideas for future reporting · demo scenarios",
-                    "Ideoita tuleviin juttuihin · demoesimerkkejä",
-                  )}
-                </span>
-              </div>
-              <div className="story-grid">
-                {scenarios
-                  .filter(
-                    (s) =>
-                      group === "everyone" ||
-                      s.group === "everyone" ||
-                      s.group === group,
-                  )
-                  .map((item) => (
-                    <StoryCard key={item.id} item={item} />
-                  ))}
-              </div>
-            </section>
-            {ad}
-            {editorialPromise}
           </main>
         )
       ) : view === "offers" ? (
@@ -2228,8 +2207,8 @@ export default function App() {
               {ad}
               <small>
                 {t(
-                  "Changes appear immediately in Your Oulu. Fictional advertiser, no booking.",
-                  "Muutokset näkyvät heti Sinun Oulusi -näkymässä. Kuvitteellinen mainostaja, ei varausta.",
+                  "Preview of a clearly separated local ad placement. Fictional advertiser, no booking.",
+                  "Esikatselu selvästi erotetusta paikallismainoksesta. Kuvitteellinen mainostaja, ei varausta.",
                 )}
               </small>
             </div>
@@ -2300,6 +2279,22 @@ export default function App() {
               )}
             </p>
           </section>
+          <section className="more-stories">
+            <div className="section-title">
+              <h2>
+                {t("Ideas for future coverage", "Ideoita tuleviin juttuihin")}
+              </h2>
+              <span>
+                {t("Demo scenarios, not news", "Demoesimerkkejä, ei uutisia")}
+              </span>
+            </div>
+            <div className="story-grid">
+              {[...scenarios, briefingPreview].map((item) => (
+                <StoryCard key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
+          {editorialPromise}
         </main>
       ) : (
         <main className="wrap newsroom-view">

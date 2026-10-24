@@ -4,7 +4,7 @@ Production: https://kaleva-local.vercel.app · PR: https://github.com/rauaap/hac
 
 ## 1. One sentence
 
-**Don't just read the news. Shape it.** International residents in Oulu ask what they need to know, journalists verify the answers, and each explanation is published in English and Finnish so the whole city benefits.
+**Your Oulu. Your news. Your voice.** A community-powered local news dashboard for international residents in Oulu: relevant Kaleva news, questions that shape coverage, and verified answers in English and Finnish.
 
 | | |
 |---|---|
@@ -19,6 +19,16 @@ Production: https://kaleva-local.vercel.app · PR: https://github.com/rauaap/hac
 **Resident asks → community interest → journalist investigates → verified bilingual explanation → both language communities benefit**
 
 Supporting a question never changes its status. An editor decides.
+
+## Preferred demo flow (three minutes)
+
+1. **Open the dashboard** (https://kaleva-local.vercel.app). It has three areas: **Your News** on the left (real Kaleva RSS, *Professionals & families* by default), **Community Radar** on the right, and **Verified Answers** below it.
+2. **Highlight Community Radar.** Click **I wonder this too** on the eVaka question and say: "Readers influence what gets covered."
+3. **Open Presenter Mode:** **Newsroom demo ↗ → Open Presenter Mode →**, or go straight to `/#presenter`.
+4. **Publish the answer.** Use the walkthrough below; the reader panel updates instantly.
+5. **Conclude.** Click **Exit to Kaleva Local**: the dashboard's **Verified Answers** now shows the checked answer (EN/FI) and the Radar says *Answer published*.
+
+Business content (the employer pilot, ads and demo scenarios) now lives under **Membership & business**, not on the dashboard.
 
 # Presenter Mode — Live Split-Screen Demo
 
@@ -72,7 +82,7 @@ If Presenter Mode fails, use the verified walkthrough below: Community Radar →
 
 | Time | Click | Say |
 |---|---|---|
-| 0–10 s | 1. **Community Radar: shape what we cover ↓**<br>2. **I wonder this too** on the eVaka iPhone question | "A parent (fictional, labelled) asks. Others support it. It is still *Submitted*: support is a signal, not a decision." |
+| 0–10 s | 1. Point at **Community Radar** in the right column<br>2. **I wonder this too** on the eVaka iPhone question | "A parent (fictional, labelled) asks. Others support it. It is still *Submitted*: support is a signal, not a decision." |
 | 10–20 s | 3. **Newsroom demo ↗**<br>4. **Select for coverage** on the first item | "Community Insight shows the need, the signal, and the **verified evidence** from the City of Oulu notice, which is not a Kaleva article. Assessments are labelled." |
 | 20–35 s | 5. **Use the Community Insight as the reason**<br>6. **Open prepared draft**<br>7. **Replace unsupported assertion**<br>8. Tick **I checked both drafts**<br>9. Tick **I reviewed the English**<br>10. **Approve reviewed version** | "*Works on every phone* blocked publication. Facts and language must both be checked. Any edit resets the approval." |
 | 35–50 s | 11. **Publish to reader feed**<br>12. **Open the published answer**<br>13. **Lue suomeksi**<br>14. **Your Oulu** | "One verified answer, two language communities. The city's follow-up stays *Not yet answered*. Back on the Radar it shows *Answer published* with a link." |
@@ -83,7 +93,7 @@ That is 14 clicks. Automated runs pass at 320 px, 390 px and 1440 px. Time a reh
 
 | Time | Say | Show |
 |---|---|---|
-| 0:00–0:25 | **Problem.** "Oulu's international professionals and families aren't just missing Finnish news. They're missing a voice in local journalism." One person we interviewed didn't know Kaleva existed and got local information from WhatsApp, Instagram, TikTok, Google and Yle. Say it is one interview. | Landing page and its core message |
+| 0:00–0:25 | **Problem.** "Oulu's international professionals and families aren't just missing Finnish news. They're missing a voice in local journalism." One person we interviewed didn't know Kaleva existed and got local information from WhatsApp, Instagram, TikTok, Google and Yle. Say it is one interview. | Dashboard: *Your Oulu. Your news. Your voice.* |
 | 0:25–0:35 | **Audience.** International professionals and their families, plus the Finnish-speaking neighbours who share their questions. | Hero text |
 | 0:35–1:30 | **Product, differentiator and reliability.** The walkthrough above. | Radar → Insight → approval → bilingual answer |
 | 1:30–1:55 | **Daily relevance.** Real Kaleva RSS ranked per audience, with visible reasons and uncertain stories marked. AI translation runs on the server, guided by historical 2012 Kaleva English style, and always needs human approval. | **Professionals & families**, then **Why it ranks here** |

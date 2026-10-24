@@ -3742,3 +3742,224 @@ select {
 .presenter-waiting {
   font-size: clamp(14px, 0.9vw, 17px);
 }
+
+/* ---------- Yksinkertaistettu lukijan etusivu ---------- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  padding-block: 14px 10px;
+  border-bottom: 2px solid var(--ink);
+}
+.site-header .masthead {
+  font-size: clamp(28px, 3vw, 38px);
+  letter-spacing: -1.5px;
+}
+.site-header .masthead > span {
+  margin-left: 6px;
+}
+.site-header nav {
+  border: 0;
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 18px;
+}
+.site-header .nav-item {
+  font-size: 13px;
+  padding: 10px 0 8px;
+}
+.site-header .newsroom-link {
+  font-size: 12px;
+  font-weight: 600;
+}
+.site-header .language {
+  font-size: 12px;
+  min-height: 32px;
+  min-width: 32px;
+}
+.site-header .utility-divider {
+  margin-inline: 2px;
+}
+.dashboard-intro {
+  display: block;
+  padding: 22px 0 18px;
+}
+.dashboard-intro h1 {
+  font-size: clamp(28px, 3.2vw, 42px);
+  letter-spacing: -1px;
+  margin: 0 0 6px;
+}
+.dashboard-intro .intro-sub {
+  display: block;
+  max-width: 60ch;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+  gap: clamp(20px, 3vw, 40px);
+  align-items: start;
+  padding-bottom: 40px;
+}
+.dashboard-news .news-feed {
+  margin-top: 0;
+}
+.dashboard-side {
+  display: grid;
+  gap: 20px;
+}
+.dashboard-side .community-card {
+  padding: 20px;
+}
+.dashboard-side .community-card h2,
+.verified-answers h2 {
+  font-size: clamp(20px, 1.7vw, 24px);
+  line-height: 1.2;
+  margin: 4px 0 10px;
+}
+.dashboard-side .radar-list .community-question:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+.dashboard-side .lead-open {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.radar-more {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+  margin-bottom: 10px;
+}
+.radar-more > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+.radar-note {
+  margin-top: 10px;
+}
+.verified-answers {
+  border-top: 3px solid #3c5b40;
+  padding-top: 12px;
+}
+.verified-answers .eyebrow {
+  color: #2f4a33;
+}
+.answers-empty {
+  border: 1px dashed #c9ccc0;
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0;
+}
+.answer-item {
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+}
+.answer-item.featured {
+  border: 1px solid #b9c7b0;
+  border-left: 4px solid #3c5b40;
+  background: #fafcf7;
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.answer-item h3 {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.3;
+  margin: 0 0 6px;
+}
+.answer-lang {
+  float: right;
+  display: inline-flex;
+  border: 1px solid var(--ink);
+  margin: 0 0 6px 10px;
+}
+.answer-lang button {
+  border: 0;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 12px;
+  min-height: 30px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.answer-lang button.active {
+  background: var(--ink);
+  color: #fff;
+}
+.answer-question,
+.answer-trust {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+.answer-trust {
+  display: grid;
+  gap: 2px;
+}
+.answer-excerpt {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 8px;
+}
+@media (max-width: 900px) {
+  .dashboard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Etusivun uutislista: yksi selkeä sarake. */
+.dashboard-news .feed-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dashboard-news .feed-item {
+  padding: 14px 0 16px;
+}
+.dashboard-news .feed-item h3 {
+  font-size: clamp(19px, 1.5vw, 22px);
+  line-height: 1.25;
+}
+.feed-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 2px 0 0;
+}
+.dashboard-news .news-feed .section-title {
+  align-items: flex-end;
+}
+.site-header nav {
+  justify-content: flex-start;
+}
+@media (max-width: 600px) {
+  .site-header {
+    gap: 4px 16px;
+  }
+  .site-header nav {
+    gap: 2px 14px;
+  }
+}
+/* Vastauslistan napit ovat tekstilinkkejä, eivät korttipainikkeita. */
+.verified-answers .published-section {
+  margin-top: 0;
+}
+.verified-answers .card-open {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-height: 32px;
+  padding: 0;
+  position: static;
+}
