@@ -108,7 +108,9 @@ test("derives explainable topics and Oulu locality from headline and description
   assert.ok(
     strike.topics.find((t) => t.id === "work")?.matched.includes("lakkoon"),
   );
-  assert.equal(strike.locality.level, "none");
+  // Syöte ei kerro, missä lakko on: epävarma, ei arvattu.
+  assert.equal(strike.locality.level, "uncertain");
+  assert.equal(strike.confidence, "uncertain");
   assert.ok(poverty.topics.some((t) => t.id === "family"));
   assert.equal(poverty.locality.level, "oulu");
   assert.deepEqual(poverty.locality.matched, ["oulun"]);
@@ -222,8 +224,8 @@ test("inflected Oulu-region place names are recognised, look-alike words are not
   );
   assert.deepEqual(muhos.locality, { level: "region", matched: ["muhoksen"] });
   assert.equal(one("Iissä avattiin uusi koulu").locality.level, "region");
-  assert.equal(one("Kemikaalivuoto tehtaalla").locality.level, "none");
-  assert.equal(one("Iiris voitti").locality.level, "none");
+  assert.equal(one("Kemikaalivuoto tehtaalla").locality.level, "uncertain");
+  assert.equal(one("Iiris voitti").locality.level, "uncertain");
   // Oulu voittaa, jos juttu mainitsee myös muun paikkakunnan.
   assert.equal(
     one("Oulusta Helsinkiin uusi junayhteys").locality.level,
@@ -251,14 +253,21 @@ test("look-alike words do not create false topic matches", () => {
   );
 });
 
-test("every locality, including none, is an explicit scoring reason", () => {
+test("every locality, including uncertain, is an explicit scoring reason", () => {
   const national = one("Hallitus esittää muutoksia sosiaaliturvaan");
-  assert.equal(national.locality.level, "none");
+  assert.equal(national.locality.level, "national");
   const r = national.relevance.students.reasons.find(
     (x) => x.type === "locality",
   );
   assert.deepEqual(r && { level: r.level, points: r.points }, {
-    level: "none",
+    level: "national",
     points: -1,
   });
+  const unknown = one("Lakko alkaa ensi kuussa");
+  assert.equal(unknown.locality.level, "uncertain");
+  assert.ok(
+    unknown.relevance.students.reasons.some(
+      (x) => x.type === "locality" && x.level === "uncertain" && x.points === -0.5,
+    ),
+  );
 });

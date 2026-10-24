@@ -243,8 +243,8 @@ export default function AssistantPanel({
           />
           <small>
             {t(
-              "Only newsroom editors can run the paid AI step. The code is kept for this browser tab only.",
-              "Maksullista AI-vaihetta voivat käyttää vain toimittajat. Koodi säilyy vain tässä välilehdessä.",
+              "The server checks this code before any paid AI call. It protects only the AI step, not this page. The code is kept for this browser tab only.",
+              "Palvelin tarkistaa koodin ennen jokaista maksullista AI-kutsua. Se suojaa vain AI-vaiheen, ei tätä sivua. Koodi säilyy vain tässä välilehdessä.",
             )}
           </small>
         </label>

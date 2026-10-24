@@ -80,6 +80,8 @@ The eVaka story and survey workflow use prepared fixtures, labelled as simulatio
 
 Questions and forms stay on the device. New live RSS leads and other queue questions are blocked from the prepared eVaka draft: they require new reporting, not automatic publication. Membership activation takes no money. Prices are proposed test offers, not Kaleva's prices. There are no asserted customers, partnerships, audience figures or revenue. Employers fund access, never coverage decisions or individual reading surveillance.
 
+See [SECURITY.md](SECURITY.md): it separates the server-enforced AI protection from browser-only demo safeguards (newsroom, approval gates, Community Radar spam checks) and gives the production design for editor authentication and shared community data.
+
 The lead background article is labelled a concept preview rather than falsely claiming real editorial approval. Published newsroom versions are explicitly approved only inside this local simulation. Essential information, the main article and original sources stay free.
 
 ### Sources and visual provenance
@@ -89,6 +91,10 @@ The lead background article is labelled a concept preview rather than falsely cl
 - [International House Oulu multilingual survey](https://oulu.com/ihoulu/uutiset-ja-tapahtumat/international-house-oulun-monikielisen-kyselyn-tulokset/): inspected 23 October 2026. Since 24 October 2026 linked only as historical background in the newsroom source monitor, not as evidence for the main story. The survey was conducted in spring 2024; 448 respondents, ten languages; the source reports 26% identifying missing information or lack of English-language information as an integration barrier. Used as dated background, never a new 2026 event or paid-demand evidence. Publication date was not displayed on the inspected page.
 - [Journalist's Guidelines](https://jsn.fi/en/journalists-guidelines/): informs visible sourcing, corrections, editorial responsibility and advertising separation. No claim of formal compliance review.
 - [Kaleva](https://www.kaleva.fi/): editorial visual reference. Waterfront SVG illustration and layouts are original. No proprietary article text or imagery copied. Google Fonts serves DM Sans and Source Serif 4, with local serif/sans fallbacks.
+
+### News relevance evaluation
+
+`node scripts/eval-relevance.ts` scores the ranking against `tests/fixtures/relevance-eval.json`: 25 real Kaleva RSS items (24 Oct 2026) with geography and per-audience labels (0–2). The labels were proposed by Claude Code and **still need review by a team member**. The rules were tuned with this set in view, so results on it are optimistic. Re-label a fresh feed to get a held-out check. `tests/relevance.test.ts` fails if a personalised feed shows a story labelled irrelevant.
 
 ### Browser verification
 

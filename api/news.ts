@@ -27,10 +27,25 @@ export type TopicId =
   | "economy"
   | "politics"
   | "sport";
-export type Locality = "oulu" | "region" | "elsewhere" | "none";
+export type Locality =
+  "oulu" | "region" | "elsewhere" | "national" | "international" | "uncertain";
+// Osuma vain syötekuvauksessa tai pelkkä maininta painaa vähemmän kuin otsikon aihe.
+export type MatchContext = "headline" | "summary-only" | "mention-only";
 export type Reason =
-  | { type: "topic"; topic: TopicId; points: number; matched: string[] }
-  | { type: "locality"; level: Locality; points: number; matched: string[] }
+  | {
+      type: "topic";
+      topic: TopicId;
+      points: number;
+      matched: string[];
+      context: MatchContext;
+    }
+  | {
+      type: "locality";
+      level: Locality;
+      points: number;
+      matched: string[];
+      context: MatchContext;
+    }
   | { type: "recency"; hours: number; points: number }
   | { type: "kind"; kind: ItemKind; points: number };
 export type ItemKind = "news" | "editorial" | "poll" | "syndicated";
@@ -44,6 +59,8 @@ export type NewsItem = {
   feedCategories: string[];
   topics: { id: TopicId; matched: string[] }[];
   locality: { level: Locality; matched: string[] };
+  // "uncertain": otsikko ja kuvaus eivät riitä luotettavaan luokitteluun.
+  confidence: "clear" | "uncertain";
   relevance: Record<Audience, { score: number; reasons: Reason[] }>;
 };
 export type NewsResponse = {
@@ -68,7 +85,10 @@ export type NewsResponse = {
     >[];
   };
 };
-type Normalized = Omit<NewsItem, "topics" | "locality" | "relevance">;
+type Normalized = Omit<
+  NewsItem,
+  "topics" | "locality" | "confidence" | "relevance"
+>;
 
 // Suomenkieliset sanavartalot. Sana täsmää, jos se alkaa vartalolla
 // tai (vähintään 5 merkin vartalolla) sisältää sen yhdyssanan osana.
@@ -248,6 +268,9 @@ const OULU = [
   "hiukkavaara",
   "raksila",
   "tuira",
+  // Oulun Kärpät.
+  "kärpät",
+  "kärppi",
 ];
 // Oulun seutu: naapurikunnat, joista moni käy Oulussa töissä tai koulussa.
 // Lyhyet nimet täsmäävät vain kokonaisina sanoina ("ii" ei osu muihin sanoihin).
@@ -292,7 +315,80 @@ const ELSEWHERE = [
   "hämeenlin",
 ];
 // "kemi" alkuosana osuisi sanaan "kemikaali", joten vain taivutusmuodot.
-const ELSEWHERE_EXACT = ["kemi", "kemin", "kemissä", "kemistä", "kemiin"];
+// Muiden kaupunkien urheiluseurat kertovat paikasta, vaikka kaupunkia ei mainita.
+const ELSEWHERE_EXACT = [
+  "kemi",
+  "kemin",
+  "kemissä",
+  "kemistä",
+  "kemiin",
+  "hifk",
+  "hifk:n",
+  "tappara",
+  "tapparan",
+  "jokerit",
+  "ilves",
+  "lukko",
+  "ässät",
+  "jyp",
+  "kalpa",
+  "saipa",
+  "hpk",
+];
+// Ulkomaat ja kansainväliset toimijat.
+const INTERNATIONAL = [
+  "ukrain",
+  "venäj",
+  "kiova",
+  "kiovan",
+  "moskova",
+  "yhdysval",
+  "washington",
+  "kiina",
+  "kiinan",
+  "euroopan unioni",
+  "eu-maiden",
+  "nato",
+  "zelensk",
+  "putin",
+  "trump",
+  "maailmaa",
+  "maailmanlaajui",
+  "ulkomail",
+];
+// Valtakunnalliset toimijat: koskee koko maata, ei erityisesti Oulua.
+const NATIONAL = [
+  "hallitus",
+  "hallituk",
+  "eduskun",
+  "ministeri",
+  "pääministeri",
+  "puolue",
+  "perussuomalai",
+  "kokoomu",
+  "oppositio",
+  "välikysym",
+  "kela",
+  "valtakunnalli",
+];
+// Poliisin maininta ei yksin tee jutusta turvallisuusuutista (esim. tutkintapyyntö).
+const SAFETY_INCIDENT = [
+  "ammusk",
+  "laukau",
+  "tulipalo",
+  "palossa",
+  "savu",
+  "onnettomuu",
+  "häirik",
+  "rikos",
+  "pahoinpite",
+  "ryöst",
+  "loukkaant",
+  "pelastu",
+  "varoitu",
+  "tietoturv",
+  "haavoittuvuu",
+];
 // Sanat, jotka näyttävät aiheen vartalolta mutta tarkoittavat muuta.
 const NOT_TOPIC = [
   "sähköpost",
@@ -342,8 +438,16 @@ export const WEIGHTS: Record<Audience, Record<TopicId, number>> = {
 const LOCALITY_POINTS: Record<Locality, number> = {
   oulu: 2,
   region: 1,
-  none: -1,
+  uncertain: -0.5,
+  national: -1,
   elsewhere: -2,
+  international: -2,
+};
+// Pelkästä syötekuvauksesta tai maininnasta löytynyt osuma saa puolet pisteistä.
+const CONTEXT_FACTOR: Record<MatchContext, number> = {
+  headline: 1,
+  "summary-only": 0.5,
+  "mention-only": 0.5,
 };
 const KIND_POINTS: Record<ItemKind, number> = {
   news: 0,
@@ -479,24 +583,56 @@ export function normalize(xml: string): {
 }
 
 export function classify(item: Normalized, now: Date): NewsItem {
+  const titleWords = tokens(item.title);
   const words = tokens(`${item.title} ${item.description ?? ""}`);
   const topicWords = words.filter(
     (w) => !NOT_TOPIC.some((x) => w.startsWith(x)),
   );
+  const inTitle = (found: string[]) =>
+    found.some((w) => titleWords.includes(w));
   const topics = (Object.keys(TOPICS) as TopicId[]).flatMap((id) => {
     const matched = match(topicWords, TOPICS[id]);
-    return matched.length ? [{ id, matched }] : [];
+    if (!matched.length) return [];
+    const context: MatchContext =
+      id === "safety" &&
+      !matched.some((w) => SAFETY_INCIDENT.some((x) => w.startsWith(x)))
+        ? "mention-only"
+        : inTitle(matched)
+          ? "headline"
+          : "summary-only";
+    return [{ id, matched, context }];
   });
-  const oulu = match(words, OULU);
-  const region = placeMatch(words, REGION, REGION_EXACT);
-  const elsewhere = placeMatch(words, ELSEWHERE, ELSEWHERE_EXACT);
-  const locality = oulu.length
-    ? { level: "oulu" as const, matched: oulu }
-    : region.length
-      ? { level: "region" as const, matched: region }
-      : elsewhere.length
-        ? { level: "elsewhere" as const, matched: elsewhere }
-        : { level: "none" as const, matched: [] };
+  // Paikka päätellään tärkeysjärjestyksessä: Oulu voittaa, vaikka muukin paikka mainitaan.
+  const text = words.join(" ");
+  const candidates: [Locality, string[]][] = [
+    ["oulu", match(words, OULU)],
+    ["region", placeMatch(words, REGION, REGION_EXACT)],
+    ["elsewhere", placeMatch(words, ELSEWHERE, ELSEWHERE_EXACT)],
+    [
+      "international",
+      INTERNATIONAL.flatMap((x) =>
+        x.includes(" ")
+          ? text.includes(x)
+            ? [x]
+            : []
+          : words.filter((w) => w.startsWith(x)),
+      ),
+    ],
+    ["national", placeMatch(words, NATIONAL, [])],
+  ];
+  const [level, matched] = candidates.find(([, m]) => m.length) ?? [
+    "uncertain",
+    [],
+  ];
+  const locality = { level, matched: [...new Set(matched)] };
+  const localityContext: MatchContext =
+    (level === "oulu" || level === "region") && !inTitle(matched)
+      ? "summary-only"
+      : "headline";
+  const confidence: NewsItem["confidence"] =
+    level === "uncertain" || !topics.some((t) => t.context === "headline")
+      ? "uncertain"
+      : "clear";
   const hours = item.publishedAt
     ? Math.max(0, (now.valueOf() - Date.parse(item.publishedAt)) / 3.6e6)
     : null;
@@ -505,14 +641,18 @@ export function classify(item: Normalized, now: Date): NewsItem {
     const reasons: Reason[] = topics.map((t) => ({
       type: "topic",
       topic: t.id,
-      points: WEIGHTS[audience][t.id],
+      points: WEIGHTS[audience][t.id] * CONTEXT_FACTOR[t.context],
       matched: t.matched,
+      context: t.context,
     }));
+    // Myönteiset paikkapisteet puolittuvat, jos paikka on vain kuvauksessa.
+    const base = LOCALITY_POINTS[locality.level];
     reasons.push({
       type: "locality",
       level: locality.level,
-      points: LOCALITY_POINTS[locality.level],
+      points: base > 0 ? base * CONTEXT_FACTOR[localityContext] : base,
       matched: locality.matched,
+      context: localityContext,
     });
     if (hours !== null)
       reasons.push({
@@ -533,7 +673,13 @@ export function classify(item: Normalized, now: Date): NewsItem {
       reasons: reasons.filter((r) => r.points !== 0),
     };
   }
-  return { ...item, topics, locality, relevance };
+  return {
+    ...item,
+    topics: topics.map(({ id, matched }) => ({ id, matched })),
+    locality,
+    confidence,
+    relevance,
+  };
 }
 
 async function readFeed() {

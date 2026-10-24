@@ -1,0 +1,384 @@
+{
+  "about": "Real items from Kaleva’s free RSS feed, fetched 2026-10-24T09:57:57.592Z. Headline and feed description only, as published in the feed. Relevance labels: 0 = not relevant, 1 = somewhat relevant, 2 = clearly relevant to the audience living in Oulu. Geography is judged only from the headline and description.",
+  "feed": "https://www.kaleva.fi/feedit/rss/managed-listing/rss-maksuttomat/",
+  "now": "2026-10-24T09:57:57.592Z",
+  "labelledBy": "Proposed by Claude Code on 2026-10-24. Not yet reviewed by a team member: review every label before treating these results as human-validated.",
+  "reviewed": false,
+  "items": [
+    {
+      "id": "kaleva-13722723",
+      "title": "Paavo Pesusienet häiriköivät keskustassa ja juoksivat poliisia karkuun – Poliisin tietojen mukaan tapaus liittyi Slikin keikkaan",
+      "description": "Naamioitunut seurue häiriköi keskustassa ja juoksi poliisia karkuun",
+      "publishedAt": "2026-10-24T04:33:14.000Z",
+      "url": "https://www.kaleva.fi/paavo-pesusienet-hairikoivat-keskustassa-ja-juoksi/13722723",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "uncertain",
+        "students": 1,
+        "families": 0,
+        "note": "City centre disturbance; the headline and summary name no town."
+      }
+    },
+    {
+      "id": "kaleva-13721027",
+      "title": "Somejätit täytyy saada vastuuseen sisällöistään – Yhdysvalloissa oikeus on jo todennut Metan vaarantavan lasten terveyttä",
+      "description": "Pääkirjoitus lauantaille 24.10. nuorten someilmiöistä",
+      "publishedAt": "2026-10-23T10:50:00.000Z",
+      "url": "https://www.kaleva.fi/somejatit-taytyy-saada-vastuuseen-sisalloistaan-yh/13721027",
+      "kind": "editorial",
+      "feedCategories": [],
+      "label": {
+        "geography": "international",
+        "students": 0,
+        "families": 1,
+        "note": "Opinion on social media platforms and children; US court cited."
+      }
+    },
+    {
+      "id": "kaleva-13721477",
+      "title": "IS: Google lobbasi hallitusta halvemman sähkön puolesta ja lähetteli sähköposteja ministereille",
+      "description": "Google lobbasi vahvasti datakeskusten halvemman sähkön puolesta, Ilta-Sanomat kertoo. Yhtiö pyrki esimerkiksi tapaamaan ministereitä useita kertoja.",
+      "publishedAt": "2026-10-23T07:02:55.000Z",
+      "url": "https://www.kaleva.fi/is-google-lobbasi-hallitusta-halvemman-sahkon-puol/13721477",
+      "kind": "syndicated",
+      "feedCategories": [],
+      "label": {
+        "geography": "national",
+        "students": 0,
+        "families": 0,
+        "note": "Syndicated national lobbying story."
+      }
+    },
+    {
+      "id": "kaleva-13721272",
+      "title": "\"Hallitus ei elä samassa todellisuudessa tavallisten suomalaisten kanssa\" – oppositio teki välikysymyksen",
+      "description": "SDP:n, keskustan, vihreiden, vasemmistoliiton ja Liike Nytin edustajat esittelevät välikysymyksen sisällön eduskunnassa.",
+      "publishedAt": "2026-10-23T05:22:31.000Z",
+      "url": "https://www.kaleva.fi/hallitus-ei-ela-samassa-todellisuudessa-tavalliste/13721272",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "national",
+        "students": 0,
+        "families": 0,
+        "note": "Parliamentary interpellation."
+      }
+    },
+    {
+      "id": "kaleva-13720316",
+      "title": "Nivalasta löytyy Suomen surkein kylätie",
+      "description": "Nivalan Makkaratie valittiin Suomen surkeimmaksi kylätieksi 2026. Tapaus nostaa esiin maaseudun rapautuvan tieverkon vaikutukset arkeen ja elinkeinoihin.",
+      "publishedAt": "2026-10-23T03:00:00.000Z",
+      "url": "https://www.kaleva.fi/nivalasta-loytyy-suomen-surkein-kylatie/13720316",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "elsewhere",
+        "students": 0,
+        "families": 0,
+        "note": "Village road in Nivala."
+      }
+    },
+    {
+      "id": "kaleva-13721155",
+      "title": "Yksi henkilö altistui savulle omakotitalon palossa Kemissä",
+      "description": "Omakotitalossa syttyi tulipalo torstai-iltana Kemissä.",
+      "publishedAt": "2026-10-22T20:01:54.000Z",
+      "url": "https://www.kaleva.fi/yksi-henkilo-altistui-savulle-omakotitalon-palossa/13721155",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "elsewhere",
+        "students": 0,
+        "families": 0,
+        "note": "House fire in Kemi."
+      }
+    },
+    {
+      "id": "kaleva-13721139",
+      "title": "Ilmahälytykset säestivät Orpon Kiovan-vierailun joka hetkeä – Venäjältä puuttuu tahto rauhaan, pääministeri sanoi",
+      "description": "Orpo tapasi Zelenskyin, ja presidentinpalatsissa allekirjoitettiin yrityspapereita suomalaisten ja ukrainalaisten välillä yhteensä 300 miljoonan euron edestä.",
+      "publishedAt": "2026-10-22T19:34:56.000Z",
+      "url": "https://www.kaleva.fi/ilmahalytykset-saestivat-orpon-kiovan-vierailun-jo/13721139",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "international",
+        "students": 0,
+        "families": 0,
+        "note": "Prime minister in Kyiv."
+      }
+    },
+    {
+      "id": "kaleva-13721118",
+      "title": "Professori Muhoksella vierailleelle The Guardianille: Datakeskuksista ei ole hyötyä Suomelle",
+      "description": "Lehti kertoo jutussa muun muassa Muhoksella tehdyistä hakkuista, jotka oli aloitettu ennen kuin hankkeen lainmukainen ympäristövaikutusten arviointi oli valmis.",
+      "publishedAt": "2026-10-22T19:13:49.000Z",
+      "url": "https://www.kaleva.fi/professori-muhoksella-vierailleelle-the-guardianil/13721118",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "region",
+        "students": 0,
+        "families": 1,
+        "note": "Data-centre debate about Muhos; jobs and land use near Oulu."
+      }
+    },
+    {
+      "id": "kaleva-13720891",
+      "title": "Oulun vanhalle vankilalle löytyi uusi omistaja – Senaatti-kiinteistöt solmi kaupan",
+      "description": "Kaupan kokonaisuuteen kuuluvat muun muassa vuonna 1885 valmistunut punatiilinen vankilarakennus, sen laajennusosat sekä vuonna 1778 kruununvankilaksi alkujaan valmistunut Oxenstiernan talo.",
+      "publishedAt": "2026-10-22T13:58:22.000Z",
+      "url": "https://www.kaleva.fi/oulun-vanhalle-vankilalle-loytyi-uusi-omistaja-sen/13720891",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "oulu",
+        "students": 1,
+        "families": 1,
+        "note": "Old Oulu prison building sold; local life."
+      }
+    },
+    {
+      "id": "kaleva-13720005",
+      "title": "Taustatyö Ukrainan sodan lopettamiseksi sai uutta vauhtia – rauhanvälittäjät avainasemassa",
+      "description": "Pääkirjoitus perjantaille 23.10. Ukrainan sodan rauhanpyrkimyksistä",
+      "publishedAt": "2026-10-22T13:15:00.000Z",
+      "url": "https://www.kaleva.fi/taustatyo-ukrainan-sodan-lopettamiseksi-sai-uutta/13720005",
+      "kind": "editorial",
+      "feedCategories": [],
+      "label": {
+        "geography": "international",
+        "students": 0,
+        "families": 0,
+        "note": "Opinion on Ukraine peace efforts."
+      }
+    },
+    {
+      "id": "kaleva-13720712",
+      "title": "LVV on tehnyt poliisille tutkintapyynnön Googlen Muhoksen datakeskushankkeesta",
+      "description": "LVV on tehnyt poliisille tutkintapyynnön Googlen Muhoksen datakeskushankkeesta ja vaatii yhtiöltä tarkempaa vesienhallintasuunnitelmaa.",
+      "publishedAt": "2026-10-22T12:48:48.000Z",
+      "url": "https://www.kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "region",
+        "students": 0,
+        "families": 1,
+        "note": "Police request about the Muhos data-centre project."
+      }
+    },
+    {
+      "id": "kaleva-13720390",
+      "title": "Kysely: Jos voisit päättää, millaiset hautajaiset pitäisit itsellesi?",
+      "description": "Elämän aikana ehtii parhaimmillaan järjestämään useat juhlat. Omien hautajaistensa sisältöön ei järjestämishetkellä voi enää vaikuttaa. Jos saisit järjestää itsellesi unelmiesi hautajaiset, miltä viimeiset juhlasi näyttäisivät?",
+      "publishedAt": "2026-10-22T12:01:48.000Z",
+      "url": "https://www.kaleva.fi/kysely-jos-voisit-paattaa-millaiset-hautajaiset-pi/13720390",
+      "kind": "poll",
+      "feedCategories": [],
+      "label": {
+        "geography": "uncertain",
+        "students": 0,
+        "families": 0,
+        "note": "Reader poll about funerals."
+      }
+    },
+    {
+      "id": "kaleva-13720195",
+      "title": "Helsinki sai yleisurheilun EM-kilpailut",
+      "description": "Yleisurheilun Euroopan mestaruuskilpailut järjestetään Helsingissä 2030.",
+      "publishedAt": "2026-10-22T09:37:10.000Z",
+      "url": "https://www.kaleva.fi/helsinki-sai-yleisurheilun-em-kilpailut/13720195",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "elsewhere",
+        "students": 0,
+        "families": 0,
+        "note": "Athletics championships in Helsinki 2030."
+      }
+    },
+    {
+      "id": "kaleva-13720146",
+      "title": "Tietoturvan takia alas ajettujen verkkopalveluiden palautuminen voi kestää jopa viikkoja",
+      "description": "Verkkopalveluita oli keskiviikkona nurin ympäri maailmaa laajasti käytössä olevasta PHP-ohjelmistosta löytyneiden haavoittuvuuksien vuoksi.",
+      "publishedAt": "2026-10-22T09:09:14.000Z",
+      "url": "https://www.kaleva.fi/tietoturvan-takia-alas-ajettujen-verkkopalveluiden/13720146",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "international",
+        "students": 0,
+        "families": 0,
+        "note": "Global software vulnerability; Oulu impact is in a separate story."
+      }
+    },
+    {
+      "id": "kaleva-13719950",
+      "title": "Perussuomalaiset leikkaisi sosiaaliturvasta, eläkkeistä ja maahanmuutosta",
+      "description": "Purra: Tässä ei ole mitään hattaraa.",
+      "publishedAt": "2026-10-22T08:06:20.000Z",
+      "url": "https://www.kaleva.fi/perussuomalaiset-leikkaisi-sosiaaliturvasta-elakke/13719950",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "national",
+        "students": 1,
+        "families": 1,
+        "note": "Party proposal to cut social security and immigration; affects international residents if adopted."
+      }
+    },
+    {
+      "id": "kaleva-13719896",
+      "title": "Yksi otettu kiinni Kiimingin keskiviikkoillan ammuskelusta",
+      "description": "Poliisi on ottanut kiinni yhden henkilön liittyen Kiimingissä keskiviikkoiltana tapahtuneeseen ammuskeluun.",
+      "publishedAt": "2026-10-22T07:19:50.000Z",
+      "url": "https://www.kaleva.fi/yksi-otettu-kiinni-kiimingin-keskiviikkoillan-ammu/13719896",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "oulu",
+        "students": 1,
+        "families": 1,
+        "note": "Arrest after a shooting in Kiiminki, Oulu."
+      }
+    },
+    {
+      "id": "kaleva-13719579",
+      "title": "Nokian liikevaihto tekoäly- ja pilvipalveluasiakkailta yli kaksinkertaistui heinä-syyskuussa",
+      "description": "Vertailukelpoinen liikevoitto nousi 605 miljoonaan euroon.",
+      "publishedAt": "2026-10-22T05:42:59.000Z",
+      "url": "https://www.kaleva.fi/nokian-liikevaihto-tekoaly-ja-pilvipalveluasiakkai/13719579",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "uncertain",
+        "students": 0,
+        "families": 1,
+        "note": "Nokia quarterly results; the summary names no place."
+      }
+    },
+    {
+      "id": "kaleva-13719576",
+      "title": "Rekan perävaunusta irtosi ovi Pohjantiellä, liikenteeseen sinkoutui penkkejä",
+      "description": "Onnettomuus Pohjantiellä torstaina 22. lokakuuta.",
+      "publishedAt": "2026-10-22T05:37:55.000Z",
+      "url": "https://www.kaleva.fi/rekan-peravaunusta-irtosi-ovi-pohjantiella-liikent/13719576",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "oulu",
+        "students": 1,
+        "families": 1,
+        "note": "Truck incident on Pohjantie, a main Oulu road."
+      }
+    },
+    {
+      "id": "kaleva-13719309",
+      "title": "Tyhjillään olleeseen asuntoon ammuttiin laukauksia Kiimingissä",
+      "description": "Poliisin tietojen mukaan kukaan ei ole loukkaantunut tilanteessa.",
+      "publishedAt": "2026-10-21T18:21:13.000Z",
+      "url": "https://www.kaleva.fi/tyhjillaan-olleeseen-asuntoon-ammuttiin-laukauksia/13719309",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "oulu",
+        "students": 1,
+        "families": 1,
+        "note": "Shots fired at an empty flat in Kiiminki, Oulu."
+      }
+    },
+    {
+      "id": "kaleva-13719167",
+      "title": "Oulun Ideapark saa päivittäistavarakaupan: Lidl avaa myymälän kauppakeskukseen",
+      "description": "Myymälän rakentamisen mahdollistaa asemakaavan muutos Ritaharjun kaupunginosan korttelissa 30.",
+      "publishedAt": "2026-10-21T16:32:10.000Z",
+      "url": "https://www.kaleva.fi/oulun-ideapark-saa-paivittaistavarakaupan-lidl-ava/13719167",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "oulu",
+        "students": 2,
+        "families": 1,
+        "note": "Lidl opening at Ideapark, Ritaharju; everyday shopping."
+      }
+    },
+    {
+      "id": "kaleva-13718839",
+      "title": "Parkkipaten työntekijät lakkoon ensi kuussa",
+      "description": "Viisipäiväinen lakko alkaa 5. marraskuuta. Lakko koskee kaikkia yhtiössä tehtäviä töitä.",
+      "publishedAt": "2026-10-21T12:40:44.000Z",
+      "url": "https://www.kaleva.fi/parkkipaten-tyontekijat-lakkoon-ensi-kuussa/13718839",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "uncertain",
+        "students": 1,
+        "families": 1,
+        "note": "Strike at a parking company; the summary names no place."
+      }
+    },
+    {
+      "id": "kaleva-13718336",
+      "title": "Lapsiperheköyhyys näkyy Oulun päiväkodeissa – lapsen hyvinvointi ei saa olla riippuvainen kodin varakkuudesta",
+      "description": "Pääkirjoitus lapsiperheköyhyydestä torstaille 22.10.",
+      "publishedAt": "2026-10-21T12:05:00.000Z",
+      "url": "https://www.kaleva.fi/lapsiperhekoyhyys-nakyy-oulun-paivakodeissa-lapsen/13718336",
+      "kind": "editorial",
+      "feedCategories": [],
+      "label": {
+        "geography": "oulu",
+        "students": 0,
+        "families": 2,
+        "note": "Opinion on child poverty in Oulu daycare centres."
+      }
+    },
+    {
+      "id": "kaleva-13718711",
+      "title": "Suuri joukko verkkopalveluita oli keskiviikkona nurin ja käyttöön otettiin isoja korjaustoimia – myös Oulun kaupungin verkkosivuja ollut pois käytöstä",
+      "description": "Laajasti käytössä olevasta PHP-ohjelmistosta löytyi kaksi kriittistä haavoittuvuutta. Tiedossa ei ollut, että haavoittuvuuksia olisi käytetty aktiivisesti hyväksi.",
+      "publishedAt": "2026-10-21T12:03:44.000Z",
+      "url": "https://www.kaleva.fi/suuri-joukko-verkkopalveluita-oli-keskiviikkona-nu/13718711",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "oulu",
+        "students": 1,
+        "families": 2,
+        "note": "City of Oulu websites were down; residents rely on city e-services."
+      }
+    },
+    {
+      "id": "kaleva-13718712",
+      "title": "Jääkiekkoliigassa rytisee taas – HIFK antoi potkut Olli Jokiselle, tilalle Tommi Miettinen",
+      "description": "Jääkiekkoliigassa rytisee taas: Tommi Miettinen korvaa Olli Jokisen HIFK:n päävalmentajana.",
+      "publishedAt": "2026-10-21T11:52:30.000Z",
+      "url": "https://www.kaleva.fi/jaakiekkoliigassa-rytisee-taas-hifk-antoi-potkut-o/13718712",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "elsewhere",
+        "students": 0,
+        "families": 0,
+        "note": "Helsinki ice hockey club changes coach."
+      }
+    },
+    {
+      "id": "kaleva-13716906",
+      "title": "Tekoäly selätti liki sata vuotta tutkijoita askarruttaneen kysymyksen vain 88 tunnissa – onko käsillä tieteen renessanssi?",
+      "description": "Matematiikka tieteenalana on tekoälyn myötä murroksessa, sanoo matemaatikko Tuomo Kuusi. Muutos ei kuitenkaan ole hänestä välttämättä pahasta.",
+      "publishedAt": "2026-10-21T10:48:12.000Z",
+      "url": "https://www.kaleva.fi/tekoaly-selatti-liki-sata-vuotta-tutkijoita-askarr/13716906",
+      "kind": "news",
+      "feedCategories": [],
+      "label": {
+        "geography": "uncertain",
+        "students": 1,
+        "families": 0,
+        "note": "AI and mathematics research; no local angle stated."
+      }
+    }
+  ]
+}
