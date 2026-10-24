@@ -211,8 +211,8 @@ export default function LiveSources({
           )}
           <p className="privacy-note">
             {t(
-              "Live retrieval is working software. Relevance decisions, translation and reporting still need a human. The prepared workflow below uses the inspected 2024 survey instead of these new leads.",
-              "Lähdehaku on toimivaa ohjelmistoa. Aihevalinta, käännös ja uutisointi vaativat edelleen ihmisen. Alla oleva valmis työnkulku käyttää tarkistettua vuoden 2024 kyselyä näiden uusien vihjeiden sijaan.",
+              "Live retrieval is working software. Relevance decisions, translation and reporting still need a human. The prepared workflow below uses the City of Oulu’s 14 Oct 2026 eVaka notice, checked by hand, instead of these new leads.",
+              "Lähdehaku on toimivaa ohjelmistoa. Aihevalinta, käännös ja uutisointi vaativat edelleen ihmisen. Alla oleva valmis työnkulku käyttää käsin tarkistettua Oulun kaupungin eVaka-tiedotetta (14.10.2026) näiden uusien vihjeiden sijaan.",
             )}
           </p>
         </div>
