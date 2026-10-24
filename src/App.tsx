@@ -536,6 +536,15 @@ export default function App() {
                     model: ai.model,
                     generatedAt: ai.generatedAt,
                     promptVersion: ai.promptVersion,
+                    mode: ai.mode,
+                    styleRefs: (ai.styleReferences ?? []).map(
+                      ({ id, title, url, publishedAt }) => ({
+                        id,
+                        title,
+                        url,
+                        publishedAt,
+                      }),
+                    ),
                   },
                 }
               : {}),
@@ -1019,7 +1028,17 @@ export default function App() {
                     )} ${new Date(item.ai.generatedAt).toLocaleDateString(lang === "en" ? "en-GB" : "fi-FI", { timeZone: "Europe/Helsinki" })}. ${t(
                       "The model did not read the full article. A human editor checked the facts and both languages and approved this exact version.",
                       "Malli ei lukenut koko juttua. Ihmistoimittaja tarkisti faktat ja molemmat kieliversiot ja hyväksyi tämän täsmällisen version.",
-                    )}`
+                    )} ${
+                      item.ai.styleRefs?.length
+                        ? t(
+                            `English phrasing and terminology were guided by ${item.ai.styleRefs.length} historical (2012) Kaleva English-language article${item.ai.styleRefs.length > 1 ? "s" : ""}, used for style only.`,
+                            `Englanninkielistä ilmaisua ja termejä ohjasi ${item.ai.styleRefs.length} Kalevan historiallista (2012) englanninkielistä juttua, vain tyyliviitteenä.`,
+                          )
+                        : t(
+                            "Standard translation: no Kaleva English style reference was used.",
+                            "Tavallinen käännös: Kalevan englanninkielistä tyyliviitettä ei käytetty.",
+                          )
+                    }`
                   : item.sourceLead
                     ? t(
                         "No AI was used for this brief. It was written and reviewed by hand.",

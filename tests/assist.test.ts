@@ -34,6 +34,7 @@ const good: AssistOutput = {
   unsupported_assumptions: [
     "That parking in Oulu will be free during the strike.",
   ],
+  style_references_used: ["R9"],
 };
 const originalFetch = globalThis.fetch;
 type Params = {
@@ -111,9 +112,11 @@ test("sends only the feed's own headline and description; source URL and date co
   const p = sent[0];
   assert.equal(p.model, ASSISTANT_MODEL);
   assert.equal(p.messages.length, 1);
-  assert.equal(
-    p.messages[0].content,
-    "Finnish headline: Parkkipaten työntekijät lakkoon ensi kuussa\nKaleva feed description: Viisipäiväinen lakko alkaa 5. marraskuuta. Lakko koskee kaikkia yhtiössä tehtäviä töitä.",
+  // Lähde on viestin alussa; mahdollinen tyyliosio tulee sen jälkeen eikä sisällä Kalevan tekstiä.
+  assert.ok(
+    p.messages[0].content.startsWith(
+      "Finnish headline: Parkkipaten työntekijät lakkoon ensi kuussa\nKaleva feed description: Viisipäiväinen lakko alkaa 5. marraskuuta. Lakko koskee kaikkia yhtiössä tehtäviä töitä.",
+    ),
   );
   assert.equal(p.output_config.format.type, "json_schema");
   assert.equal(p.output_config.effort, "low");
@@ -144,7 +147,7 @@ test("a story without a feed description is sent as '(none)' and an invented des
   const { draft } = await (await post("kaleva-13722723")).json();
   assert.match(
     sent[0].messages[0].content,
-    /Kaleva feed description: \(none\)$/,
+    /Kaleva feed description: \(none\)(\n|$)/,
   );
   assert.equal(draft.source.description, null);
   assert.ok(
@@ -175,6 +178,7 @@ test("fidelity checks flag new numbers, dropped attribution, padding and persona
         description: "Lakko alkaa 5. marraskuuta.",
       },
       { ...good, description_en: "The strike begins on 5 November." },
+      ["R9"],
     ),
     [],
   );

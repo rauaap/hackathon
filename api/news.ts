@@ -57,7 +57,16 @@ export type NewsResponse = {
     model: string;
     reason: "no_api_key" | "no_access_code" | null;
   };
-  items: NewsItem[];
+  items: (NewsItem & { styleReferences: StyleMatch[] })[];
+  styleGuide: {
+    archiveUrl: string;
+    caveat: string;
+    houseStyle: HouseRule[];
+    references: Pick<
+      StyleRef,
+      "id" | "title" | "url" | "publishedAt" | "topics"
+    >[];
+  };
 };
 type Normalized = Omit<NewsItem, "topics" | "locality" | "relevance">;
 
@@ -554,7 +563,30 @@ export async function GET() {
       model: ASSISTANT_MODEL,
       reason: assistantReason(),
     },
-    items: cache.feed.items.map((item) => classify(item, new Date(now))),
+    items: cache.feed.items.map((item) => {
+      const classified = classify(item, new Date(now));
+      return {
+        ...classified,
+        styleReferences: selectStyleReferences(
+          item,
+          classified.topics.map((t) => t.id),
+        ),
+      };
+    }),
+    styleGuide: {
+      archiveUrl: STYLE_ARCHIVE_URL,
+      caveat: STYLE_CAVEAT,
+      houseStyle: HOUSE_STYLE,
+      references: STYLE_REFERENCES.map(
+        ({ id, title, url, publishedAt, topics }) => ({
+          id,
+          title,
+          url,
+          publishedAt,
+          topics,
+        }),
+      ),
+    },
   };
   return json(
     body,
@@ -566,10 +598,367 @@ export async function GET() {
 }
 
 // ---------------------------------------------------------------------------
+// Kalevan englanninkielinen arkisto tyyliviitteenä (2012). Tarkistettu 24.10.2026 osoitteesta
+// https://www.kaleva.fi/aihe/news-in-english/16976. Artikkelitekstiä ei tallenneta eikä lähetetä mallille:
+// mallille menevät vain tiimin omin sanoin kirjoittamat tyylihavainnot ja termiparit.
+export const STYLE_ARCHIVE_URL =
+  "https://www.kaleva.fi/aihe/news-in-english/16976";
+export const STYLE_CAVEAT =
+  "Historical reference: Kaleva's English-language articles from May–June 2012. Used only for phrasing, headline form and terminology, never as facts about current stories. They may not reflect Kaleva's current editorial standards, and institution names may have changed since 2012.";
+export type HouseRule = { id: string; rule: string; refs: string[] };
+// Tiimin havainnot arkistosta; ei lainauksia.
+export const HOUSE_STYLE: HouseRule[] = [
+  {
+    id: "H1",
+    rule: "Headlines in Title Case and compact headline grammar: drop articles and auxiliary verbs, present tense for news, 'to' + verb for planned events.",
+    refs: ["R4", "R5", "R8", "R10"],
+  },
+  {
+    id: "H2",
+    rule: "When the Finnish source names a place, keep it prominent in the headline. Never add a place the source does not name.",
+    refs: ["R4", "R8", "R9"],
+  },
+  {
+    id: "H3",
+    rule: "Keep Finnish proper names (people, districts, streets, companies, campaigns) in Finnish; add an English generic word or a short gloss in brackets where it helps readers abroad.",
+    refs: ["R1", "R4", "R6"],
+  },
+  {
+    id: "H4",
+    rule: "When the source gives a person's role or an organisation's type, keep it next to the name. Never add descriptions the source does not give.",
+    refs: ["R2", "R5", "R7", "R10"],
+  },
+  {
+    id: "H5",
+    rule: "Keep the source's attributions ('according to', 'says', a leading outlet prefix). Never add an attribution the source does not contain.",
+    refs: ["R7", "R8"],
+  },
+  {
+    id: "H6",
+    rule: "Money as a figure followed by 'euros', thousands separated by a space, clock times as '11 pm'.",
+    refs: ["R2", "R5", "R7"],
+  },
+];
+export type StyleRef = {
+  id: string;
+  title: string;
+  url: string;
+  publishedAt: string;
+  topics: TopicId[];
+  notes: string[];
+  // Termiparit: suomenkieliset vartalot → arkistossa käytetty englanninkielinen termi.
+  terms: { fi: string[]; label: string; en: string; note?: string }[];
+  // Viiteartikkelin omat nimet ja luvut, jotka eivät saa päätyä uuteen juttuun.
+  entities: string[];
+};
+export const STYLE_REFERENCES: StyleRef[] = [
+  {
+    id: "R1",
+    title: "Oulu Luring New Residents to City",
+    url: "https://www.kaleva.fi/oulu-luring-new-residents-to-city/1661179",
+    publishedAt: "2012-05-11",
+    topics: ["work", "housing", "education", "immigration"],
+    notes: [
+      "Finnish campaign and organisation names are kept, with an English gloss in brackets on first mention.",
+      "Domestic media and institutions are explained with a short appositive for readers abroad.",
+    ],
+    terms: [
+      { fi: ["kansainväli"], label: "kansainvälinen", en: "international" },
+    ],
+    entities: [
+      "Pikkujämsä",
+      "BusinessOulu",
+      "Töölö",
+      "Canary",
+      "1.3 million",
+      "250 000",
+    ],
+  },
+  {
+    id: "R2",
+    title: "Past Gives Way to New Large School Complex",
+    url: "https://www.kaleva.fi/past-gives-way-to-new-large-school-complex/1645730",
+    publishedAt: "2012-06-01",
+    topics: ["education", "family", "services"],
+    notes: [
+      "A named source is introduced with the job title before the name.",
+      "Costs and timelines are stated plainly (a figure in euros, 'by mid-June').",
+    ],
+    terms: [
+      {
+        fi: ["kaupunginvaltuust"],
+        label: "kaupunginvaltuusto",
+        en: "City Council (e.g. Oulu City Council)",
+      },
+      {
+        fi: ["yhtenäiskoulu"],
+        label: "yhtenäiskoulu",
+        en: "comprehensive school",
+      },
+      {
+        fi: ["päiväkod", "päiväkoti"],
+        label: "päiväkoti",
+        en: "kindergarten (2012 usage)",
+        note: "The City of Oulu's current English pages use 'early childhood education and care (ECEC) centre' (eVaka notice, 14 Oct 2026); prefer the current official term.",
+      },
+    ],
+    entities: ["Kastelli", "Karjasilta", "Lemminkäinen", "Simi", "43 million"],
+  },
+  {
+    id: "R3",
+    title: "Tablets Increasingly Popular Teaching Tools",
+    url: "https://www.kaleva.fi/tablets-increasingly-popular-teaching-tools/1650923",
+    publishedAt: "2012-05-25",
+    topics: ["education", "family"],
+    notes: [
+      "A new term is defined once in plain words.",
+      "School years are expressed as grades ('eighth grader').",
+    ],
+    terms: [
+      { fi: ["koulu"], label: "koulu", en: "school" },
+      { fi: ["opettaj"], label: "opettaja", en: "teacher" },
+    ],
+    entities: [
+      "Walsh",
+      "Johnson",
+      "Paasovaara",
+      "Kuismin",
+      "Posti",
+      "60 tablet",
+    ],
+  },
+  {
+    id: "R4",
+    title: "Bridge Repairs Expected to Obstruct Traffic in Oulu",
+    url: "https://www.kaleva.fi/bridge-repairs-expected-to-obstruct-traffic-in-oul/1661132",
+    publishedAt: "2012-05-11",
+    topics: ["transport", "services"],
+    notes: [
+      "The headline states the practical consequence and the place.",
+      "Road numbers use the English form; district names stay in Finnish.",
+    ],
+    terms: [
+      {
+        fi: ["valtatie", "valtatiellä"],
+        label: "valtatie",
+        en: "Highway (e.g. valtatie 20 → Highway 20)",
+      },
+      { fi: ["ylikulkusil"], label: "ylikulkusilta", en: "overpass" },
+      { fi: ["alikulku"], label: "alikulku", en: "underpass" },
+      {
+        fi: ["kevyen"],
+        label: "kevyen liikenteen väylä",
+        en: "light traffic route",
+      },
+      { fi: ["liikente", "liikenne"], label: "liikenne", en: "traffic" },
+    ],
+    entities: [
+      "Laanila",
+      "Kaukovainio",
+      "Tervahovintie",
+      "Siikaluoma",
+      "Möljänsilta",
+      "Hupisaaret",
+      "Toppilansalmi",
+    ],
+  },
+  {
+    id: "R5",
+    title: "May to See City’s Streets Swept",
+    url: "https://www.kaleva.fi/may-to-see-citys-streets-swept/1661136",
+    publishedAt: "2012-05-11",
+    topics: ["services", "transport"],
+    notes: [
+      "Planned events are headlined with 'to' + verb.",
+      "Quantities use a space as the thousands separator.",
+    ],
+    terms: [
+      { fi: ["katupöly"], label: "katupöly", en: "street dust" },
+      {
+        fi: ["lumenkaatopaik"],
+        label: "lumenkaatopaikka",
+        en: "snow dumping site",
+      },
+    ],
+    entities: ["Rajakangas", "4 000 tons"],
+  },
+  {
+    id: "R6",
+    title: "Renovation of Kiiminki Downtown Finished by Autumn",
+    url: "https://www.kaleva.fi/renovation-of-kiiminki-downtown-finished-by-autumn/1645736",
+    publishedAt: "2012-06-01",
+    topics: ["services", "transport", "housing"],
+    notes: [
+      "Street names keep the Finnish name plus an English generic word ('… Road').",
+      "Disruption to residents is described concretely (detours, schedule).",
+    ],
+    terms: [
+      { fi: ["kiertotie"], label: "kiertotie", en: "detour" },
+      {
+        fi: ["keskustassa", "keskustaan", "keskustasta"],
+        label: "keskusta (place)",
+        en: "town centre / downtown",
+      },
+    ],
+    entities: ["Saarinen", "Ramboll", "Opintie"],
+  },
+  {
+    id: "R7",
+    title: "Assaults Concentrated Around City Centrum and Market Square Area",
+    url: "https://www.kaleva.fi/assaults-concentrated-around-city-centrum-and-mark/1661143",
+    publishedAt: "2012-05-11",
+    topics: ["safety"],
+    notes: [
+      "Police figures are attributed to a named officer with an official title.",
+      "Times of day are written as '11 pm', '2 am'.",
+    ],
+    terms: [
+      {
+        fi: ["poliisilaito"],
+        label: "poliisilaitos",
+        en: "Police Department (e.g. Oulu Police Department)",
+      },
+      { fi: ["pahoinpitel"], label: "pahoinpitely", en: "assault" },
+      { fi: ["kauppator"], label: "kauppatori", en: "Market Square" },
+      {
+        fi: ["kaupunginteatt"],
+        label: "kaupunginteatteri",
+        en: "City Theater",
+      },
+    ],
+    entities: [
+      "Rissanen",
+      "Autoranta",
+      "Hallituskatu",
+      "Kaarlenväylä",
+      "Saaristonkatu",
+    ],
+  },
+  {
+    id: "R8",
+    title: "Oulu Sees 10% of All Robberies in Country",
+    url: "https://www.kaleva.fi/oulu-sees-10-of-all-robberies-in-country/1645726",
+    publishedAt: "2012-06-01",
+    topics: ["safety"],
+    notes: [
+      "Local figures are compared with the national figure for context.",
+      "Percentages use digits and % in the headline.",
+    ],
+    terms: [
+      { fi: ["ryöst"], label: "ryöstö", en: "robbery" },
+      { fi: ["törke"], label: "törkeä pahoinpitely", en: "aggravated assault" },
+      { fi: ["poliisi"], label: "poliisi", en: "police" },
+    ],
+    entities: ["52 robberies", "530"],
+  },
+  {
+    id: "R9",
+    title: "Tough Competition for Motor Vehicle Inspection in Oulu Region",
+    url: "https://www.kaleva.fi/tough-competition-for-motor-vehicle-inspection-in/1645734",
+    publishedAt: "2012-06-01",
+    topics: ["work", "economy", "transport"],
+    notes: [
+      "Business stories lead with the situation in the region, then a named entrepreneur.",
+    ],
+    terms: [
+      {
+        fi: ["katsastu"],
+        label: "katsastus",
+        en: "(motor) vehicle inspection",
+      },
+      { fi: ["yrittäj"], label: "yrittäjä", en: "entrepreneur" },
+      { fi: ["työntekij"], label: "työntekijä", en: "employee" },
+    ],
+    entities: ["Laukka", "Hiironen", "Haapalehto", "160 000"],
+  },
+  {
+    id: "R10",
+    title: "Ilmarinen Purchases Pekurinkulma Building from Dutch Redevco",
+    url: "https://www.kaleva.fi/ilmarinen-purchases-pekurinkulma-building-from-dut/1655962",
+    publishedAt: "2012-05-18",
+    topics: ["economy", "housing"],
+    notes: [
+      "Companies are introduced with a short descriptor ('the pension insurance firm …').",
+    ],
+    terms: [
+      {
+        fi: ["eläkevakuutu"],
+        label: "eläkevakuutusyhtiö",
+        en: "pension insurance company",
+      },
+      { fi: ["kiinteistö"], label: "kiinteistö", en: "property / real estate" },
+      { fi: ["yhtiö"], label: "yhtiö", en: "company" },
+    ],
+    entities: [
+      "Ilmarinen",
+      "Redevco",
+      "Pekurinkulma",
+      "Aimonen",
+      "Kirkkokatu 12",
+    ],
+  },
+];
+export type StyleMatch = {
+  id: string;
+  score: number;
+  topics: TopicId[];
+  terms: { label: string; en: string; note?: string }[];
+};
+// Kevyt haku: aiheiden päällekkäisyys (2 p./aihe) + lähdetekstistä löytyvät termiparit (3 p./termi). Enintään 3 viitettä.
+export function selectStyleReferences(
+  item: { title: string; description: string | null },
+  topics: TopicId[],
+  max = 3,
+): StyleMatch[] {
+  const words = tokens(`${item.title} ${item.description ?? ""}`);
+  return STYLE_REFERENCES.map((ref) => {
+    const sharedTopics = ref.topics.filter((t) => topics.includes(t));
+    const terms = ref.terms
+      .filter((term) => match(words, term.fi).length > 0)
+      .map(({ label, en, note }) => ({ label, en, ...(note ? { note } : {}) }));
+    return {
+      id: ref.id,
+      score: sharedTopics.length * 2 + terms.length * 3,
+      topics: sharedTopics,
+      terms,
+    };
+  })
+    .filter((m) => m.score >= 3)
+    .sort(
+      (a, b) =>
+        b.score - a.score || a.id.localeCompare(b.id, "en", { numeric: true }),
+    )
+    .slice(0, max);
+}
+// Mallille menevä tyyliosio: vain omat havainnot ja termiparit, ei Kalevan otsikoita tai tekstiä.
+export function styleBlock(matches: StyleMatch[]): string {
+  if (!matches.length) return "";
+  const refs = matches.map((m) => STYLE_REFERENCES.find((r) => r.id === m.id)!);
+  const terms = new Map<string, string>();
+  for (const m of matches)
+    for (const t of m.terms)
+      terms.set(t.label, `${t.label} → ${t.en}${t.note ? ` (${t.note})` : ""}`);
+  return [
+    "STYLE GUIDANCE (from Kaleva's 2012 English-language archive, summarised by the newsroom; style only, not facts about this story):",
+    ...HOUSE_STYLE.map((h) => `- ${h.id}: ${h.rule}`),
+    ...refs.map(
+      (r) => `- ${r.id} (${r.publishedAt.slice(0, 4)}): ${r.notes.join(" ")}`,
+    ),
+    ...(terms.size
+      ? [
+          "Terminology seen in those articles (use only if it fits this source):",
+          ...[...terms.values()].map((t) => `- ${t}`),
+        ]
+      : []),
+    "Never add a place, person, role, figure or event that the Finnish source does not contain.",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Toimituksen AI-avustaja (Claude). Kutsutaan vain palvelimella; avain luetaan ympäristömuuttujasta.
 // Lähdeaineisto on aina syötteen oma otsikko ja kuvaus palvelimen välimuistista, ei selaimen lähettämä teksti.
 export const ASSISTANT_MODEL = "claude-opus-5-5";
-export const PROMPT_VERSION = "assist-v1";
+export const PROMPT_VERSION = "assist-v2-style";
 const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_DRAFTS = 200;
 const RELEVANCE = ["high", "medium", "low", "unclear"] as const;
@@ -582,6 +971,7 @@ export type AssistOutput = {
   evidence_sufficient: boolean;
   missing_information: string[];
   unsupported_assumptions: string[];
+  style_references_used: string[];
 };
 export type AssistDraft = {
   itemId: string;
@@ -597,6 +987,13 @@ export type AssistDraft = {
   promptVersion: string;
   generatedAt: string;
   usage: { inputTokens: number; outputTokens: number } | null;
+  // "style-grounded": tyyliviitteet annettiin mallille; "standard": ei osuvaa viitettä.
+  mode: "style-grounded" | "standard";
+  styleReferences: (StyleMatch & {
+    title: string;
+    url: string;
+    publishedAt: string;
+  })[];
 };
 const SCHEMA = {
   type: "object",
@@ -610,6 +1007,7 @@ const SCHEMA = {
     "evidence_sufficient",
     "missing_information",
     "unsupported_assumptions",
+    "style_references_used",
   ],
   properties: {
     headline_en: { type: "string" },
@@ -631,6 +1029,7 @@ const SCHEMA = {
     evidence_sufficient: { type: "boolean" },
     missing_information: { type: "array", items: { type: "string" } },
     unsupported_assumptions: { type: "array", items: { type: "string" } },
+    style_references_used: { type: "array", items: { type: "string" } },
   },
 };
 const SYSTEM = `You help a local newsroom in Oulu, Finland, prepare English drafts for international residents. A human editor reviews everything you write before anything is published.
@@ -645,7 +1044,10 @@ Return JSON with these fields:
 - relevance_explanation: one to three sentences explaining that judgement using only what the source text states, phrased as "The headline reports..." or "The description says...". Do not give advice, predict consequences, or describe what the item means for the reader personally. If the source text is not enough to explain why it matters, say so plainly.
 - evidence_sufficient: true only if the headline and description alone state who is affected and what changes; otherwise false.
 - missing_information: short questions a reader would need answered that the source text does not answer.
-- unsupported_assumptions: claims a writer might be tempted to make about this item that the source text does not support.`;
+- unsupported_assumptions: claims a writer might be tempted to make about this item that the source text does not support.
+- style_references_used: the IDs (such as "R4") of the style guidance entries you actually followed. Use an empty list if no style guidance was given or none applied.
+
+The message may contain STYLE GUIDANCE summarised from Kaleva's English-language articles from 2012. Use it only for headline form, phrasing and terminology. It is not about this story: never take names, places, numbers, events or claims from it. If a listed term does not fit the Finnish source, ignore it. The Finnish source is the only factual source.`;
 
 type AssistParams = Anthropic.Beta.Messages.MessageCreateParamsNonStreaming;
 // Testikorvike tarvitsee vain nämä vastauksen kentät.
@@ -741,7 +1143,8 @@ function validate(value: unknown): AssistOutput {
     typeof v.relevance_explanation !== "string" ||
     typeof v.evidence_sufficient !== "boolean" ||
     !strings(v.missing_information) ||
-    !strings(v.unsupported_assumptions)
+    !strings(v.unsupported_assumptions) ||
+    !strings(v.style_references_used)
   )
     throw new AssistError(
       "invalid_output",
@@ -764,12 +1167,14 @@ function validate(value: unknown): AssistOutput {
     unsupported_assumptions: v.unsupported_assumptions
       .slice(0, 6)
       .map((s) => trim(s, 240)),
+    style_references_used: [...new Set(v.style_references_used)].slice(0, 5),
   };
 }
 // Deterministiset lähdeuskollisuuden tarkistukset. Varoitukset menevät luonnokseen toimittajan merkintöinä.
 export function checkFidelity(
   source: { title: string; description: string | null },
   output: AssistOutput,
+  styleRefIds: string[] = [],
 ): string[] {
   const warnings: string[] = [];
   const sourceText = `${source.title} ${source.description ?? ""}`;
@@ -804,12 +1209,36 @@ export function checkFidelity(
     warnings.push(
       "The relevance note contains advice or personal implications, which the source does not support.",
     );
+  // Tyyliviitteen omat nimet tai luvut eivät saa siirtyä uuteen juttuun faktoina.
+  const lowerSource = sourceText.toLowerCase();
+  const lowerEnglish = english.toLowerCase();
+  for (const ref of STYLE_REFERENCES)
+    for (const entity of ref.entities)
+      if (
+        lowerEnglish.includes(entity.toLowerCase()) &&
+        !lowerSource.includes(entity.toLowerCase())
+      )
+        warnings.push(
+          `“${entity}” comes from the 2012 style reference ${ref.id}, not from this Finnish source.`,
+        );
+  const unknownRefs = output.style_references_used.filter(
+    (id) => !styleRefIds.includes(id) && !HOUSE_STYLE.some((h) => h.id === id),
+  );
+  if (unknownRefs.length)
+    warnings.push(
+      `The model cited style references that were not provided: ${unknownRefs.join(", ")}.`,
+    );
   return warnings;
 }
 
 async function generate(item: Normalized): Promise<AssistDraft> {
   const client = await assistantClient();
   const source = { title: item.title, description: item.description };
+  const matches = selectStyleReferences(
+    source,
+    classify(item, new Date()).topics.map((t) => t.id),
+  );
+  const guidance = styleBlock(matches);
   let response;
   try {
     response = await client.create({
@@ -825,7 +1254,7 @@ async function generate(item: Normalized): Promise<AssistDraft> {
       messages: [
         {
           role: "user",
-          content: `Finnish headline: ${item.title}\nKaleva feed description: ${item.description ?? "(none)"}`,
+          content: `Finnish headline: ${item.title}\nKaleva feed description: ${item.description ?? "(none)"}${guidance ? `\n\n${guidance}` : ""}`,
         },
       ],
     });
@@ -851,7 +1280,11 @@ async function generate(item: Normalized): Promise<AssistDraft> {
     itemId: item.id,
     source: { ...source, url: item.url, publishedAt: item.publishedAt },
     output,
-    fidelityWarnings: checkFidelity(source, output),
+    fidelityWarnings: checkFidelity(
+      source,
+      output,
+      matches.map((m) => m.id),
+    ),
     model: ASSISTANT_MODEL,
     promptVersion: PROMPT_VERSION,
     generatedAt: new Date().toISOString(),
@@ -861,6 +1294,16 @@ async function generate(item: Normalized): Promise<AssistDraft> {
           outputTokens: response.usage.output_tokens,
         }
       : null,
+    mode: matches.length ? "style-grounded" : "standard",
+    styleReferences: matches.map((m) => {
+      const ref = STYLE_REFERENCES.find((r) => r.id === m.id)!;
+      return {
+        ...m,
+        title: ref.title,
+        url: ref.url,
+        publishedAt: ref.publishedAt,
+      };
+    }),
   };
 }
 

@@ -63,6 +63,17 @@ ASSISTANT_MAX_CALLS_PER_DAY=60    # optional, default 60 per server instance
 
 At the default caps the worst case is about 60 × (4,000 output × $20/M + ~1,500 input × $4/M) ≈ **$5 per server instance per day**. Caches, caps and lockout are per server instance. **For a hard global ceiling, also set a monthly spend limit for the API key's workspace in the Anthropic Console.**
 
+### Kaleva English style references (added 24 October 2026)
+
+The assistant can ground its English in Kaleva's own [News in English archive](https://www.kaleva.fi/aihe/news-in-english/16976). The archive lists 21 English articles, all freely readable and published in May–June 2012. Ten articles on local government, schools, work, services, traffic and safety in Oulu were read, and their metadata is stored in `STYLE_REFERENCES` in `api/news.ts`.
+
+- **What is stored and sent.** The repository and the model get only metadata (title, URL, date, topics), **the team's own style notes** and Finnish→English term pairs seen in those articles. The model never receives article text or headlines. Kaleva's `robots.txt` disallows AI crawlers (including `anthropic-ai`), so no article text is persisted.
+- **Retrieval.** Retrieval is deterministic, with no embeddings. A reference scores 2 points per shared topic and 3 per matching term pair. References scoring at least 3 are kept, up to 3. Otherwise the draft is labelled **standard translation**.
+- **Prompt order.** The Finnish source comes first. The style guidance says it is not about the story, and that no place, person, role, figure or event may be added.
+- **Checks.** Fidelity checks flag any name or figure from a reference article that is not in the source, and any reference ID the model cites that was not provided.
+- **Transparency.** The editor sees the matched references before generation, even without an API key. After generation they also see the Finnish source next to the proposed English, the mode, and which references the model reports using. Readers see a one-line disclosure.
+- **Caveat.** These are historical 2012 references, not necessarily current standards. For example, the 2012 term "kindergarten" is shown with a note to prefer the City of Oulu's current "ECEC centre".
+
 ### Deliberate boundaries
 
 The eVaka story and survey workflow use prepared fixtures, labelled as simulations. The only real model integration is the editorial AI assistant described below; it works only when a server API key is configured. No crawler, payment processor, authentication, email delivery, tracking service or database is connected. The source desk makes real read-only requests to Kaleva RSS and one Oulu open-data endpoint via `/api/sources`; drafts and translations remain simulated. Alex North is a fictional reviewer. Public newsroom controls demonstrate review responsibility; they are not secure production administration. The seeded assertion detector covers the known demo assertion; arbitrary text still needs genuine human fact checking.

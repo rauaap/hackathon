@@ -99,3 +99,18 @@ Browser artifacts are local and gitignored under `output/playwright/`. The code 
 - `npm test` 26/26: 5 new tests covering missing or short code, 401 before work, lockout and recovery, daily cap and the concurrency cap.
 - Local browser checks: AI assistant 9/9 (code required, Bearer header sent, wrong code rejected and not stored, code kept only in `sessionStorage`), eVaka 12/12, feed 11/11; axe 0.
 - **Real Claude request: not performed.** No API key is configured; this is a blocker.
+
+## Kaleva English style grounding (24 October 2026)
+
+- **Source checked.** The archive page https://www.kaleva.fi/aihe/news-in-english/16976 returned HTTP 200 and lists 21 English articles. The 10 selected articles are freely readable (no paywall) and carry `NewsArticle` structured data with author Organization "Kaleva" and publication dates 11 May – 1 June 2012.
+- **AI opt-out.** `robots.txt` allows `*` but disallows `anthropic-ai`, `GPTBot`, `Google-Extended`, `CCBot` and others. Article text was read only for human-directed style analysis. It is not stored in the repository, and the temporary copies were deleted. Only the team's own notes and term pairs reach the model.
+- `npm test` 33/33 on Node 26.5. 7 new tests:
+  - reference selection by topic and term
+  - standard-mode fallback, including no false match on "keskustan" (the Centre Party)
+  - prompt contains no Kaleva headlines or reference facts
+  - reference metadata format
+  - reference facts and invented reference IDs are flagged
+  - both modes in the feed and the draft
+  - approval is still mandatory
+- Browser checks on the local build: AI assistant 9/9, now also covering the planned references before generation, the source/translation comparison, reference transparency and the reader disclosure. eVaka 12/12, feed 11/11, axe 0. The bundle contains no secrets.
+- **Not done:** a comparison of standard and style-grounded output from a real model, because no API key is configured.

@@ -255,7 +255,18 @@ export type Story = {
   // Julkaistu RSS-vihjeestä: alkuperäinen Kalevan juttu.
   sourceLead?: SourceLead;
   // AI-avustuksen tiedot lukijalle näytettävää ilmoitusta varten.
-  ai?: { model: string; generatedAt: string; promptVersion: string };
+  ai?: {
+    model: string;
+    generatedAt: string;
+    promptVersion: string;
+    mode?: "style-grounded" | "standard";
+    styleRefs?: {
+      id: string;
+      title: string;
+      url: string;
+      publishedAt: string;
+    }[];
+  };
 };
 export const scenarios: Story[] = [
   {
