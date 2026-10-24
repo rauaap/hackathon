@@ -154,7 +154,15 @@ export default function NewsFeed({
     if (r.type === "topic")
       return `${topicNames[r.topic][lang]} ${points(r.points)} · ${t("matched", "osuma")} ${words(r.matched)}`;
     if (r.type === "locality")
-      return `${r.level === "oulu" ? t("Oulu area", "Oulun alue") : t("Northern Finland", "Pohjois-Suomi")} ${points(r.points)} · ${t("matched", "osuma")} ${words(r.matched)}`;
+      return r.level === "none"
+        ? `${t("No Oulu-area place named", "Oulun aluetta ei mainita")} ${points(r.points)}`
+        : `${
+            {
+              oulu: t("Oulu", "Oulu"),
+              region: t("Oulu region", "Oulun seutu"),
+              elsewhere: t("Elsewhere in Finland", "Muualla Suomessa"),
+            }[r.level]
+          } ${points(r.points)} · ${t("matched", "osuma")} ${words(r.matched)}`;
     if (r.type === "recency")
       return `${t("Recency", "Tuoreus")} ${points(r.points)} · ${t(`${r.hours} h old`, `${r.hours} t vanha`)}`;
     return `${kindNames[r.kind]?.[lang] ?? r.kind} ${points(r.points)}`;
@@ -292,9 +300,9 @@ export default function NewsFeed({
         >
           {(
             [
+              ["everyone", t("Everyone", "Kaikki")],
               ["students", t("Students", "Opiskelijat")],
               ["working", t("Professionals & families", "Työ ja perhe")],
-              ["everyone", t("Latest", "Uusimmat")],
             ] as [Group, string][]
           ).map(([g, label]) => (
             <button
@@ -367,8 +375,8 @@ export default function NewsFeed({
       {data && items.length > 0 && ranked.length === 0 && (
         <p className="muted">
           {t(
-            `None of the ${items.length} stories in the current feed matched this audience’s topics strongly enough. Choose “Latest” to see every headline.`,
-            `Yksikään syötteen ${items.length} jutusta ei osunut tämän ryhmän aiheisiin riittävästi. Valitse ”Uusimmat” nähdäksesi kaikki otsikot.`,
+            `None of the ${items.length} stories in the current feed matched this audience’s topics strongly enough. Choose “Everyone” to see every headline.`,
+            `Yksikään syötteen ${items.length} jutusta ei osunut tämän ryhmän aiheisiin riittävästi. Valitse ”Kaikki” nähdäksesi kaikki otsikot.`,
           )}
         </p>
       )}
@@ -408,8 +416,8 @@ export default function NewsFeed({
           </p>
           <p>
             {t(
-              "Ranking is rule-based, not AI: Finnish keyword stems in each headline and Kaleva’s feed description, Oulu and Northern Finland place names, recency and story type. Topic weights per audience are our demo assumptions, not measured reader data. The feed has no categories of its own, so topics are derived and can be wrong. We do not read article text, translate it or bypass any paywall. Nothing here is sent to Kaleva.",
-              "Järjestys perustuu sääntöihin, ei tekoälyyn: suomenkieliset avainsanat otsikossa ja Kalevan syötekuvauksessa, Oulun ja Pohjois-Suomen paikannimet, tuoreus ja jutun tyyppi. Aiheiden painot ovat demon oletuksia, eivät mitattua lukijatietoa. Syötteessä ei ole omia luokkia, joten aiheet on päätelty ja voivat olla väärin. Emme lue artikkelien tekstiä, käännä sitä tai kierrä maksumuuria. Mitään ei lähetetä Kalevalle.",
+              "Ranking is rule-based, not AI: Finnish keyword stems in each headline and Kaleva’s feed description, place names (Oulu and the Oulu region rank higher; other towns, or no Oulu-area place at all, rank lower), recency and story type. Topic weights per audience are our demo assumptions, not measured reader data. The feed has no categories of its own, so topics are derived and can be wrong. We do not read article text, translate it or bypass any paywall. Nothing here is sent to Kaleva.",
+              "Järjestys perustuu sääntöihin, ei tekoälyyn: suomenkieliset avainsanat otsikossa ja Kalevan syötekuvauksessa, paikannimet (Oulu ja Oulun seutu nostavat, muut paikkakunnat tai Oulun alueen puuttuminen laskevat), tuoreus ja jutun tyyppi. Aiheiden painot ovat demon oletuksia, eivät mitattua lukijatietoa. Syötteessä ei ole omia luokkia, joten aiheet on päätelty ja voivat olla väärin. Emme lue artikkelien tekstiä, käännä sitä tai kierrä maksumuuria. Mitään ei lähetetä Kalevalle.",
             )}
           </p>
           <a href={data.feed.url} target="_blank" rel="noreferrer">

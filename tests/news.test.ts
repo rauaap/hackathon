@@ -180,3 +180,85 @@ test("returns retryable 502 when Kaleva fails and nothing is cached", async () =
   assert.equal(res.headers.get("cache-control"), "no-store");
   assert.equal((await res.json()).status, "unavailable");
 });
+
+// Oikeita otsikoita Kalevan syötteestä 24.10.2026, joissa vanha sääntö osui väärin.
+const one = (title: string, description = "") =>
+  classify(
+    normalize(
+      feed(item(9, title, description, "Sat, 24 Oct 2026 04:00:00 +0000")),
+    ).items[0],
+    now,
+  );
+const topicIds = (i: ReturnType<typeof one>) => i.topics.map((t) => t.id);
+
+test("stories from elsewhere in Finland do not reach personalised feeds", () => {
+  const road = one(
+    "Nivalasta löytyy Suomen surkein kylätie",
+    "Nivalan tieverkon kunto",
+  );
+  assert.equal(road.locality.level, "elsewhere");
+  const athletics = one(
+    "Helsinki sai yleisurheilun EM-kilpailut",
+    "Yleisurheilun Euroopan mestaruuskilpailut järjestetään Helsingissä 2030.",
+  );
+  assert.equal(athletics.locality.level, "elsewhere");
+  // Urheilukilpailu ei ole paikallinen tapahtuma.
+  assert.ok(!topicIds(athletics).includes("events"));
+  for (const i of [road, athletics])
+    for (const a of ["students", "families"] as const)
+      assert.ok(
+        i.relevance[a].score < 3,
+        `${i.title} ${a} ${i.relevance[a].score}`,
+      );
+  // Sama aihe Oulussa nousee selvästi muualla tapahtuvan ohi.
+  const oulu = one("Pohjantiellä liikenne ruuhkautui", "Oulun liikenne");
+  assert.ok(oulu.relevance.students.score - road.relevance.students.score >= 3);
+  assert.equal(one("Kemissä syttyi tulipalo").locality.level, "elsewhere");
+});
+
+test("inflected Oulu-region place names are recognised, look-alike words are not", () => {
+  const muhos = one(
+    "LVV on tehnyt tutkintapyynnön Googlen Muhoksen datakeskushankkeesta",
+  );
+  assert.deepEqual(muhos.locality, { level: "region", matched: ["muhoksen"] });
+  assert.equal(one("Iissä avattiin uusi koulu").locality.level, "region");
+  assert.equal(one("Kemikaalivuoto tehtaalla").locality.level, "none");
+  assert.equal(one("Iiris voitti").locality.level, "none");
+  // Oulu voittaa, jos juttu mainitsee myös muun paikkakunnan.
+  assert.equal(
+    one("Oulusta Helsinkiin uusi junayhteys").locality.level,
+    "oulu",
+  );
+});
+
+test("look-alike words do not create false topic matches", () => {
+  assert.deepEqual(topicIds(one("Google lähetteli sähköposteja", "")), []);
+  assert.ok(
+    !topicIds(one("Nokian pilvipalveluasiakkailta kasvua")).includes(
+      "services",
+    ),
+  );
+  assert.ok(
+    !topicIds(one("Lentopallo: Oulun joukkue voitti")).includes("transport"),
+  );
+  assert.ok(!topicIds(one("Hän katuu päätöstään")).includes("transport"));
+  // "Kaupunginosa" on paikka, ei kaupungin palvelu.
+  assert.deepEqual(topicIds(one("Uusi kaupunginosa nousee")), []);
+  // Varsinaiset osumat säilyvät.
+  assert.ok(topicIds(one("Sähkön hinta nousee")).includes("economy"));
+  assert.ok(
+    topicIds(one("Kaupungin verkkopalvelut nurin")).includes("services"),
+  );
+});
+
+test("every locality, including none, is an explicit scoring reason", () => {
+  const national = one("Hallitus esittää muutoksia sosiaaliturvaan");
+  assert.equal(national.locality.level, "none");
+  const r = national.relevance.students.reasons.find(
+    (x) => x.type === "locality",
+  );
+  assert.deepEqual(r && { level: r.level, points: r.points }, {
+    level: "none",
+    points: -1,
+  });
+});
