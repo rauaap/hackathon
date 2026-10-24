@@ -50,7 +50,7 @@ That is 14 clicks. Automated runs pass at 320 px, 390 px and 1440 px. Time a reh
 |---|---|
 | RSS feed unavailable | The walkthrough needs no RSS. The feed shows the last saved copy or a clear error with a link to kaleva.fi; say so and continue. |
 | Expected live article gone from the feed | The feed changes daily. Pick any Oulu story near the top of **Professionals & families**; its reasons explain the ranking. |
-| Anthropic AI unavailable | That is the current state. The panel says "unavailable… Nothing is generated or simulated." The walkthrough uses the team-written eVaka draft, labelled as a concept. Never call it AI output. |
+| AI backend unavailable | The panel says "unavailable… Nothing is generated or simulated." The 45-second walkthrough never needs AI: it uses the team-written eVaka draft, labelled as a concept. Never call that draft AI output. |
 | Unstable internet | After the first load, the walkthrough runs from the browser. Backup screenshots: `output/playwright/demo45-2026-10-24/` and `audit-2026-10-24/`. |
 | Stale localStorage from rehearsals | Click **Reset demo ↻** in the footer or in the newsroom notice. The audit tests confirm that old and corrupt saved data load without errors and that reset restores the start. |
 
@@ -62,7 +62,7 @@ That is 14 clicks. Automated runs pass at 320 px, 390 px and 1440 px. Time a reh
    - Output is a draft with `[EDITOR]` placeholders that block approval.
    - Fact and language reviews are both mandatory and tied to the exact version.
    - 2012 Kaleva references guide style only.
-   - *Status:* the integration is built and tested with mocks, but no real model call has run in production yet.
+   - *Status:* one real end-to-end generation succeeded on 24 Oct (10.4 s, no fidelity warnings, all unsupported details listed as missing). That is one test, not proven quality.
 3. **Who pays?** Our hypothesis is employers hiring international staff, starting with one paid pilot. Ads and subscriptions come later. Nothing is validated yet.
 4. **How do you attract international residents?** A hypothesis to test: through employers' onboarding and the channels people already use. Our interviewee named WhatsApp, Instagram and TikTok. Share links to answers; no app is needed.
 5. **How does the community influence decisions?** Questions and support are signals the editor sees in Community Insight. Editors decide using reader needs and the available sources; popularity alone never decides.
@@ -75,12 +75,12 @@ That is 14 clicks. Automated runs pass at 320 px, 390 px and 1440 px. Time a reh
 
 | Real (implemented) | Simulated (labelled) | Unverified |
 |---|---|---|
-| Live Kaleva RSS and explainable ranking (6 geography levels, uncertain marking) | Seeded questions and the fictional parent | Real Claude translation: never run in production (no key) |
+| Live Kaleva RSS and explainable ranking (6 geography levels, uncertain marking) | Seeded questions and the fictional parent | Translation quality beyond **one** successful real test (24 Oct: 10.4 s, 5,683 + 629 tokens, no fidelity warnings) |
 | City of Oulu notice as the only evidence; fact and language gates; version-specific approval; corrections | Newsroom: public, no sign-in, browser-only; editor Alex North is fictional | Better quality from 2012 style references |
-| Server-side AI endpoint protection (access code, caps); safe "unavailable" state | Supports, statuses and publications exist only in this browser | Ranking accuracy on new stories: the 25-item set has `reviewed: false` and was used for tuning |
+| Real AI drafts through the team's Agent SDK server, behind the editor access code and caps; "available" requires a backend health check | Supports, statuses and publications exist only in this browser | Ranking accuracy on new stories: the 25-item set has `reviewed: false` and was used for tuning |
 | Browser-side question checks | | Demand, willingness to pay, repeat use |
 
-A teammate's branch `agent-sdk-backend` moves the AI call to an Agent SDK server, and its Vercel variables are already set. **It is not part of this release** and is untested with a real request. Do not claim live AI.
+The AI call runs on the team's Agent SDK server with the team's own Claude subscription, for this personal demo only. Generation needs the editor access code. **Never share the code with judges.** Say "one verified test generation", not "proven translation quality".
 
 ## 8. Before a real Kaleva pilot
 
